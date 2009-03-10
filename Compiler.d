@@ -49,10 +49,13 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 		}
 	}
 	
+	foreach (mod; compileArray) {
+		mod.deps = null;
+	}
+	
 	compile(["-v"], compileArray, modules, (char[] line) {
 		if (moduleSemantic1Regex.test(line)) {
 			moduleDepStack = [getModule(moduleSemantic1Regex[1].dup)];
-			m.deps = null;
 		}
 		
 		else if (importSemanticStartRegex.test(line)) {
@@ -85,6 +88,7 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 						compileMore ~= depMod;
 					}
 				} else assert (depMod.path.length > 0);
+				//Stdout.formatln("Module {} depends on {}", m.name, depMod.name);
 				m.deps ~= depMod;
 			}
 		}
@@ -116,7 +120,7 @@ void compile(
 
 		Stderr.copy(process.stderr).flush;
 		checkProcessFail(process);
-		Stdout.formatln("process finished");
+		//Stdout.formatln("process finished");
 	}
 	
 	if(globalParams.oneAtATime)
@@ -254,7 +258,9 @@ import tango.util.container.HashSet;
 
 void compile(ref Module[char[]] modules, ref Module[] moduleStack)
 {
-	Stdout.formatln("compile called with: {}", moduleStack);
+	if (globalParams.verbose) {
+		Stdout.formatln("compile called with: {}", moduleStack);
+	}
 	
 	bool[Module][Module] revDeps;
 	foreach (mname, m; modules) {

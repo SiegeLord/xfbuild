@@ -130,6 +130,7 @@ scope class BuildTask {
 						Stdout.formatln("{}'s obj file was removed", m.name);
 					
 					m.needRecompile = true;
+					moduleStack ~= m;
 				}
 				
 				foreach(dep; TextUtil.patterns(deps, ","))
@@ -168,8 +169,10 @@ scope class BuildTask {
 			Path.copy(".deps", ".deps.bak");
 		}
 		
-		auto file = new File(".deps", File.WriteCreate);
-		scope(exit) file.close();
+		scope file = new File(".deps", File.WriteCreate);
+		scope(exit) {
+			file.flush;
+		}
 		
 		foreach(m; modules)
 		{

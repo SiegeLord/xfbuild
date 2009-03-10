@@ -52,7 +52,7 @@ bool link(ref Module[char[]] modules)
 		char[] currentFile = null;
 		Module currentModule = null;
 		
-		foreach(line; new Lines!(char)(process.stderr))
+		foreach(line; new Lines!(char)(process.stdout))
 		{
 			Stdout(line).newline;
 		

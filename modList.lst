@@ -1,0 +1,7 @@
+Main.d
+Module.d
+GlobalParams.d
+Process.d
+BuildTask.d
+Compiler.d
+Linker.d

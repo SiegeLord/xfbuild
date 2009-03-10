@@ -5,6 +5,8 @@ private {
 	import xf.build.Module;
 	import xf.build.Compiler;
 	import xf.build.Linker;
+	
+	import xf.utils.Profiler;
 
 	import Path = tango.io.Path;
 	import tango.io.device.File;
@@ -35,29 +37,39 @@ scope class BuildTask {
 	
 	this(char[][] mainFiles ...) {
 		this.mainFiles = mainFiles.dup;
-		readDeps();
+		profile!("BuildTask.readDeps")({
+			readDeps();
+		});
 	}
 	
 	
 	~this() {
-		writeDeps();
+		profile!("BuildTask.writeDeps")({
+			writeDeps();
+		});
 	}
 	
 	
 	void execute() {
-		do compile(); while(link());
+		profile!("BuildTask.execute")({
+			do compile(); while(link());
+		});
 	}
 	
 	
 	void compile() {
-		if (moduleStack.length > 0) {
-			.compile(modules, moduleStack);
-		}
+		profile!("BuildTask.compile")({
+			if (moduleStack.length > 0) {
+				.compile(modules, moduleStack);
+			}
+		});
 	}
 	
 	
 	bool link() {
-		return .link(modules);
+		return profile!("BuildTask.link")({
+			return .link(modules);
+		});
 	}
 	
 

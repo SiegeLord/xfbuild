@@ -5,6 +5,8 @@ private {
 	import xf.build.Module;
 	import xf.build.Process;
 
+	import xf.utils.Profiler;
+
 	import tango.sys.Process;
 	import tango.io.stream.Lines;
 	import tango.text.Regex;
@@ -54,47 +56,49 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 	}
 	
 	compile(["-v"], compileArray, modules, (char[] line) {
-		if (moduleSemantic1Regex.test(line)) {
-			moduleDepStack = [getModule(moduleSemantic1Regex[1].dup)];
-		}
-		
-		else if (importSemanticStartRegex.test(line)) {
-			char[] modName = importSemanticStartRegex[1].dup;
-			
-			if ("object" == modName) {
-			} else if (isIgnored(modName)) {
-				/+if (globalParams.verbose)		// omg spam :P
-					Stdout.formatln(modName ~ " is ignored");+/
-			} else {
-				moduleDepStack ~= getModule(modName);
+		profile!("output parsing")({
+			if (moduleSemantic1Regex.test(line)) {
+				moduleDepStack = [getModule(moduleSemantic1Regex[1].dup)];
 			}
-		}
-		
-		else if (importSemanticEndRegex.test(line)) {
-			char[] modName = importSemanticEndRegex[1].dup;
-			char[] modPath = importSemanticEndRegex[2].dup;
 			
-			if (modName != "object" && !isIgnored(modName)) {
-				assert (modPath.length > 0);
-				moduleDepStack = moduleDepStack[0..$-1];
-
-				//Stdout.formatln("file for module {} : {}", modName, modPath);
+			else if (importSemanticStartRegex.test(line)) {
+				char[] modName = importSemanticStartRegex[1].dup;
 				
-				Module depMod = getModule(modName);
-				if (depMod.path is null) {	// newly encountered module
-					depMod.path = modPath;
-					if (!depMod.isHeader) {
-						depMod.timeModified = Path.modified(depMod.path).ticks;
-						compileMore ~= depMod;
-					}
-				} else assert (depMod.path.length > 0);
-				//Stdout.formatln("Module {} depends on {}", m.name, depMod.name);
-				m.deps ~= depMod;
+				if ("object" == modName) {
+				} else if (isIgnored(modName)) {
+					/+if (globalParams.verbose)		// omg spam :P
+						Stdout.formatln(modName ~ " is ignored");+/
+				} else {
+					moduleDepStack ~= getModule(modName);
+				}
 			}
-		}
+			
+			else if (importSemanticEndRegex.test(line)) {
+				char[] modName = importSemanticEndRegex[1].dup;
+				char[] modPath = importSemanticEndRegex[2].dup;
+				
+				if (modName != "object" && !isIgnored(modName)) {
+					assert (modPath.length > 0);
+					moduleDepStack = moduleDepStack[0..$-1];
 
-		else if(!verboseRegex.test(line) && TextUtil.trim(line).length)
-			Stderr(line).newline;
+					//Stdout.formatln("file for module {} : {}", modName, modPath);
+					
+					Module depMod = getModule(modName);
+					if (depMod.path is null) {	// newly encountered module
+						depMod.path = modPath;
+						if (!depMod.isHeader) {
+							depMod.timeModified = Path.modified(depMod.path).ticks;
+							compileMore ~= depMod;
+						}
+					} else assert (depMod.path.length > 0);
+					//Stdout.formatln("Module {} depends on {}", m.name, depMod.name);
+					m.deps ~= depMod;
+				}
+			}
+
+			else if(!verboseRegex.test(line) && TextUtil.trim(line).length)
+				Stderr(line).newline;
+		});
 	});
 	
 	foreach (mod; compileArray) {
@@ -262,49 +266,56 @@ void compile(ref Module[char[]] modules, ref Module[] moduleStack)
 		Stdout.formatln("compile called with: {}", moduleStack);
 	}
 	
-	bool[Module][Module] revDeps;
-	foreach (mname, m; modules) {
-		foreach (d; m.deps) {
-			revDeps[d][m] = true;
-		}
-	}
+	Module[] compileArray;
 	
-	auto toCompile = new HashSet!(Module);
-	{
-		Module[] checkDeps;
-		
-		foreach (mod; moduleStack) {
-			toCompile.add(mod);
-			checkDeps ~= mod;
+	profile!("finding modules to be compiled")({
+		bool[Module][Module] revDeps;
+		foreach (mname, m; modules) {
+			foreach (d; m.deps) {
+				revDeps[d][m] = true;
+			}
 		}
 		
-		while (checkDeps.length > 0) {
-			auto mod = checkDeps[$-1];
-			checkDeps = checkDeps[0..$-1];
+		auto toCompile = new HashSet!(Module);
+		{
+			Module[] checkDeps;
 			
-			if (!(mod in revDeps)) {
-				//Stdout.formatln("Module {} is not used by anything", mod.name);
-			} else {
-				foreach (rd, _dummy; revDeps[mod]) {
-					if (!toCompile.contains(rd)) {
-						toCompile.add(rd);
-						checkDeps ~= rd;
+			foreach (mod; moduleStack) {
+				toCompile.add(mod);
+				checkDeps ~= mod;
+			}
+			
+			while (checkDeps.length > 0) {
+				auto mod = checkDeps[$-1];
+				checkDeps = checkDeps[0..$-1];
+				
+				if (!(mod in revDeps)) {
+					//Stdout.formatln("Module {} is not used by anything", mod.name);
+				} else {
+					foreach (rd, _dummy; revDeps[mod]) {
+						if (!toCompile.contains(rd)) {
+							toCompile.add(rd);
+							checkDeps ~= rd;
+						}
 					}
 				}
 			}
 		}
-	}
+
+		compileArray = toCompile.toArray;
 	
-	if (globalParams.verbose) {
-		Stdout.formatln("Modules to be compiled: {}", toCompile.toArray);
-	}
+		if (globalParams.verbose) {
+			Stdout.formatln("Modules to be compiled: {}", compileArray);
+		}
+	});
 	
 	Module[] compileMore;
-	Module[] compileArray = toCompile.toArray;
 	
 	while (compileArray) {
 		compileMore = null;
-		compileAndTrackDeps(compileArray, modules, compileMore);
+		profile!("compileAndTrackDeps")({
+			compileAndTrackDeps(compileArray, modules, compileMore);
+		});
 		//Stdout.formatln("compileMore: {}", compileMore);
 		compileArray = compileMore;
 	}

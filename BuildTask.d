@@ -5,6 +5,7 @@ private {
 	import xf.build.Module;
 	import xf.build.Compiler;
 	import xf.build.Linker;
+	import xf.build.Misc;
 	
 	import xf.utils.Profiler;
 
@@ -25,14 +26,14 @@ private {
 
 static this() {
 	//defend.sim.obj.Building defend\sim\obj\Building.d 633668860572812500 defend.Main,defend.sim.Import,defend.sim.obj.House,defend.sim.obj.Citizen,defend.sim.civ.Test,
-	depLineRegex = Regex(`([a-zA-Z0-9._]+)\ ([a-zA-Z0-9.:_\-\\/]+)\ ([0-9]+)\ (.*)`);
+	//depLineRegex = Regex(`([a-zA-Z0-9._]+)\ ([a-zA-Z0-9.:_\-\\/]+)\ ([0-9]+)\ (.*)`);
 }
 
 
 scope class BuildTask {
 	Module[char[]]	modules;
 	char[][]				mainFiles;
-	Module[]			moduleStack;
+	//Module[]			moduleStack;
 	
 	
 	this(char[][] mainFiles ...) {
@@ -59,9 +60,9 @@ scope class BuildTask {
 	
 	void compile() {
 		profile!("BuildTask.compile")({
-			if (moduleStack.length > 0) {
-				.compile(modules, moduleStack);
-			}
+			//if (moduleStack.length > 0) {
+				.compile(modules);
+			//}
 		});
 	}
 	
@@ -80,7 +81,8 @@ scope class BuildTask {
 			foreach (mainFile; mainFiles) {
 				auto m = Module.fromFile(mainFile);
 				modules[m.name] = m;
-				moduleStack ~= m;
+				//moduleStack ~= m;
+				m.needRecompile = true;
 			}
 		}
 		else
@@ -90,6 +92,8 @@ scope class BuildTask {
 			
 			foreach(line; new Lines!(char)(file))
 			{
+				line = TextUtil.trim(line);
+				
 				if(!line.length)
 					continue;
 			
@@ -102,13 +106,25 @@ scope class BuildTask {
 				auto time = Integer.toLong(line[secondSpace + 1 .. thirdSpace]);
 				auto deps = line[thirdSpace + 1 .. $].dup;*/
 				
-				if(!depLineRegex.test(line))
+				/+if(!depLineRegex.test(line))
 					throw new Exception("broken .deps file (line: " ~ line ~ ")");
 				
 				auto name = depLineRegex[1].dup;
 				auto path = depLineRegex[2].dup;
 				auto time = Integer.toLong(depLineRegex[3]);
-				auto deps = depLineRegex[4].dup;
+				auto deps = depLineRegex[4].dup;+/
+				
+				auto arr = line.decomposeString(cast(char[])null, ` `, null, ` `, null, ` `, null);
+				if (arr is null) {
+					arr = line.decomposeString(cast(char[])null, ` `, null, ` `, null);
+				}
+				if (arr is null)
+					throw new Exception("broken .deps file (line: " ~ line ~ ")");
+
+				auto name = arr[0].dup;
+				auto path = arr[1].dup;
+				auto time = Integer.toLong(arr[2]);
+				auto deps = arr.length > 3 ? arr[3].dup : null;
 			
 				if(isIgnored(name))
 				{
@@ -134,7 +150,8 @@ scope class BuildTask {
 					if(globalParams.verbose)
 						Stdout.formatln("{} was modified", m.name);
 					
-					moduleStack ~= m;
+					m.needRecompile = true;
+					//moduleStack ~= m;
 				}
 				else if(!Path.exists(m.objFile))
 				{
@@ -142,7 +159,7 @@ scope class BuildTask {
 						Stdout.formatln("{}'s obj file was removed", m.name);
 					
 					m.needRecompile = true;
-					moduleStack ~= m;
+					//moduleStack ~= m;
 				}
 				
 				foreach(dep; TextUtil.patterns(deps, ","))

@@ -4,6 +4,7 @@ private {
 	import xf.build.GlobalParams;
 	import xf.build.Module;
 	import xf.build.Process;
+	import xf.build.Misc;
 
 	import xf.utils.Profiler;
 
@@ -17,17 +18,27 @@ private {
 }
 
 private {
-	Regex	importSemanticStartRegex;
-	Regex	importSemanticEndRegex;
-	Regex	moduleSemantic1Regex;
-	Regex	verboseRegex;
+	/+Regex	importSemanticStartRegex;
+	Regex	importSemanticEndRegex;+/
+	//Regex	moduleSemantic1Regex;
+	//Regex	verboseRegex;
+}
+
+bool isVerboseMsg(char[] msg) {
+	return
+		msg.startsWith(`parse`)
+	||	msg.startsWith(`semantic`)
+	||	msg.startsWith(`function`)
+	||	msg.startsWith(`import`)
+	||	msg.startsWith(`library`)
+	||	msg.startsWith(`code`);
 }
 
 static this() {
-	importSemanticStartRegex = Regex(`^Import::semantic\('([a-zA-Z0-9._]+)'\)$`);
-	importSemanticEndRegex = Regex(`^-Import::semantic\('([a-zA-Z0-9._]+)', '(.+)'\)$`);
-	moduleSemantic1Regex = Regex(`^semantic\s+([a-zA-Z0-9._]+)$`);
-	verboseRegex = Regex(`^parse|semantic|function|import|library|code.*`);
+	/+importSemanticStartRegex = Regex(`^Import::semantic\('([a-zA-Z0-9._]+)'\)$`);
+	importSemanticEndRegex = Regex(`^-Import::semantic\('([a-zA-Z0-9._]+)', '(.+)'\)$`);+/
+	//moduleSemantic1Regex = Regex(`^semantic\s+([a-zA-Z0-9._]+)$`);
+	//verboseRegex = Regex(`^parse|semantic|function|import|library|code.*`);
 }
 
 
@@ -57,12 +68,15 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 	
 	compile(["-v"], compileArray, modules, (char[] line) {
 		profile!("output parsing")({
-			if (moduleSemantic1Regex.test(line)) {
-				moduleDepStack = [getModule(moduleSemantic1Regex[1].dup)];
+			if (auto arr = line.decomposeString(`semantic`, ` `, null)) {
+			//if (moduleSemantic1Regex.test(line)) {
+				moduleDepStack = [getModule(arr[0].dup)];
 			}
 			
-			else if (importSemanticStartRegex.test(line)) {
-				char[] modName = importSemanticStartRegex[1].dup;
+			//else if (importSemanticStartRegex.test(line)) {
+			else if (auto arr = line.decomposeString(`Import::semantic('`, null, `')`)) {
+				//char[] modName = importSemanticStartRegex[1].dup;
+				char[] modName = arr[0].dup;
 				
 				if ("object" == modName) {
 				} else if (isIgnored(modName)) {
@@ -73,9 +87,12 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 				}
 			}
 			
-			else if (importSemanticEndRegex.test(line)) {
-				char[] modName = importSemanticEndRegex[1].dup;
-				char[] modPath = importSemanticEndRegex[2].dup;
+			//else if (importSemanticEndRegex.test(line)) {
+			else if (auto arr = line.decomposeString(`-Import::semantic('`, null, `', '`, null, `')`)) {
+				/+char[] modName = importSemanticEndRegex[1].dup;
+				char[] modPath = importSemanticEndRegex[2].dup;+/
+				char[] modName = arr[0].dup;
+				char[] modPath = arr[1].dup;
 				
 				if (modName != "object" && !isIgnored(modName)) {
 					assert (modPath.length > 0);
@@ -96,7 +113,7 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 				}
 			}
 
-			else if(!verboseRegex.test(line) && TextUtil.trim(line).length)
+			else if(!isVerboseMsg(line) && TextUtil.trim(line).length)
 				Stderr(line).newline;
 		});
 	});
@@ -104,6 +121,7 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 	foreach (mod; compileArray) {
 		mod.timeDep = mod.timeModified;
 		mod.wasCompiled = true;
+		mod.needRecompile = false;
 	}
 }
 
@@ -119,7 +137,7 @@ void compile(
 		scope process = new Process(true, args);
 		.execute(process);
 		foreach(line; new Lines!(char)(process.stdout)) {
-			stdout(line);
+			stdout(TextUtil.trim(line));
 		}
 
 		Stderr.copy(process.stderr).flush;
@@ -260,11 +278,11 @@ void compile(
 import tango.util.container.HashSet;
 
 
-void compile(ref Module[char[]] modules, ref Module[] moduleStack)
+void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 {
-	if (globalParams.verbose) {
+	/+if (globalParams.verbose) {
 		Stdout.formatln("compile called with: {}", moduleStack);
-	}
+	}+/
 	
 	Module[] compileArray;
 	
@@ -280,9 +298,16 @@ void compile(ref Module[char[]] modules, ref Module[] moduleStack)
 		{
 			Module[] checkDeps;
 			
-			foreach (mod; moduleStack) {
+			/+foreach (mod; moduleStack) {
 				toCompile.add(mod);
 				checkDeps ~= mod;
+			}+/
+			
+			foreach (mname, mod; modules) {
+				if (mod.needRecompile) {
+					toCompile.add(mod);
+					checkDeps ~= mod;
+				}
 			}
 			
 			while (checkDeps.length > 0) {

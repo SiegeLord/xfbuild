@@ -2,25 +2,27 @@ module xf.build.Module;
 
 private {
 	import xf.build.GlobalParams;
+	import xf.build.Misc;
+	
 	import TextUtil = tango.text.Util;
 	import Path = tango.io.Path;
 	import tango.io.device.File;
 	import tango.io.stream.Lines;
 	import tango.text.Regex;
 	import tango.text.convert.Format;
-
+	
 	// TODO: better logging
 	import tango.io.Stdout;
 }
 
 
-private {
+/+private {
 	Regex moduleHeaderRegex;
 }
 
 static this() {
 	moduleHeaderRegex = Regex(`module\s+([a-zA-Z0-9._]+)`);
-}
+}+/
 
 
 
@@ -107,9 +109,13 @@ class Module
 
 		foreach(line; new Lines!(char)(file))
 		{
-			if(moduleHeaderRegex.test(line))
+			line = TextUtil.trim(line);
+			
+			//if(moduleHeaderRegex.test(line))
+			if (auto arr = line.decomposeString(`module`, ` `, null))
 			{
-				m.name = moduleHeaderRegex[1].dup;
+				//m.name = moduleHeaderRegex[1].dup;
+				m.name = arr[0];
 				
 				if(globalParams.verbose)
 					Stdout.formatln("module name for file '{}': {}", path, m.name);

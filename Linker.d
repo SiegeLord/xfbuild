@@ -4,22 +4,34 @@ private {
 	import xf.build.GlobalParams;
 	import xf.build.Module;
 	import xf.build.Process;
+	import xf.build.Misc;
 
 	import tango.sys.Process;
 	import tango.io.stream.Lines;
-	import tango.text.Regex;
+	import tango.stdc.ctype : isalnum;
+	import tango.text.Util : contains;
 
 	// TODO: better logging
 	import tango.io.Stdout;
 }
 
-private {
+/+private {
 	Regex linkerFileRegex;
 }
 
 static this() {
 	//defend\terrain\Generator.obj(Generator)
-	linkerFileRegex = Regex(`([a-zA-Z0-9.:_\-\\/]+)\(.*\)`);
+	//linkerFileRegex = Regex(`([a-zA-Z0-9.:_\-\\/]+)\(.*\)`);
+}+/
+
+bool isValidObjFileName(char[] f) {
+	foreach (c; f) {
+		if (!isalnum(c) && !(`.:_-\/`.contains(c))) {
+			return false;
+		}
+	}
+	
+	return true;
 }
 
 
@@ -54,13 +66,18 @@ bool link(ref Module[char[]] modules)
 		
 		foreach(line; new Lines!(char)(process.stdout))
 		{
-			Stdout(line).newline;
+			line = TextUtil.trim(line);
+			//Stdout.formatln("linker: '{}'", line);
 		
 			try
 			{
-				if(linkerFileRegex.test(line))
+				auto arr = line.decomposeString(cast(char[])null, "(", null, ")");
+				
+				//if(linkerFileRegex.test(line))
+				if (arr && isValidObjFileName(arr[1]))
 				{
-					currentFile = linkerFileRegex[1];
+					//currentFile = linkerFileRegex[1];
+					currentFile = arr[1];
 					
 					foreach(m; modules)
 						if(m.objFile == currentFile)
@@ -75,7 +92,7 @@ bool link(ref Module[char[]] modules)
 					if(globalParams.verbose)
 						Stdout.formatln("linker error in file {} (module {})", currentFile, currentModule);
 				}
-				else if(/*undefinedReferenceRegex.test(line)*/ line.length >= " Error 42:".length && line[0 .. " Error 42:".length] == " Error 42:" && globalParams.recompileOnUndefinedReference)
+				else if(/*undefinedReferenceRegex.test(line)*/ line.startsWith("Error 42:") && globalParams.recompileOnUndefinedReference)
 				{
 					if(globalParams.verbose)
 					{
@@ -111,6 +128,8 @@ bool link(ref Module[char[]] modules)
 					retryCompile = true;
 					
 					break;
+				} else {
+					throw e;
 				}
 			}
 		}

@@ -5,6 +5,7 @@ Process.d
 BuildTask.d
 Compiler.d
 Linker.d
+Misc.d
 ..\utils\Profiler.d
 ..\utils\HardwareTimer.d
 ..\utils\perf.d

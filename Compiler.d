@@ -1,9 +1,9 @@
-module xf.leoBuild.Compiler;
+module xf.build.Compiler;
 
 private {
-	import xf.leoBuild.GlobalParams;
-	import xf.leoBuild.Module;
-	import xf.leoBuild.Process;
+	import xf.build.GlobalParams;
+	import xf.build.Module;
+	import xf.build.Process;
 
 	import tango.sys.Process;
 	import tango.io.stream.Lines;

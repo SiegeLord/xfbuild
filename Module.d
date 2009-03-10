@@ -1,7 +1,7 @@
-module xf.leoBuild.Module;
+module xf.build.Module;
 
 private {
-	import xf.leoBuild.GlobalParams;
+	import xf.build.GlobalParams;
 	import TextUtil = tango.text.Util;
 	import Path = tango.io.Path;
 	import tango.io.device.File;

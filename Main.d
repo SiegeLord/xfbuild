@@ -1,8 +1,8 @@
-module xf.leoBuild.Main;
+module xf.build.Main;
 
 private {
-	import xf.leoBuild.GlobalParams;
-	import xf.leoBuild.BuildTask;
+	import xf.build.GlobalParams;
+	import xf.build.BuildTask;
 	import tango.util.ArgParser;
 	import tango.stdc.stdlib : exit;
 

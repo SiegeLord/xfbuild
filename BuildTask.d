@@ -1,10 +1,10 @@
-module xf.leoBuild.BuildTask;
+module xf.build.BuildTask;
 
 private {
-	import xf.leoBuild.GlobalParams;
-	import xf.leoBuild.Module;
-	import xf.leoBuild.Compiler;
-	import xf.leoBuild.Linker;
+	import xf.build.GlobalParams;
+	import xf.build.Module;
+	import xf.build.Compiler;
+	import xf.build.Linker;
 
 	import Path = tango.io.Path;
 	import tango.io.device.File;

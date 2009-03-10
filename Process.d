@@ -1,7 +1,7 @@
-module xf.leoBuild.Process;
+module xf.build.Process;
 
 private {
-	import xf.leoBuild.GlobalParams;
+	import xf.build.GlobalParams;
 	import tango.sys.Process;
 	
 	// TODO: better logging

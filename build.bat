@@ -1,1 +1,1 @@
-dmd -g -I../.. tango-user-dmd.lib tango-base-dmd.lib -ofleoBuild.exe @modList.lst
+dmd -g -I../.. tango-user-dmd.lib tango-base-dmd.lib -ofxfBuild.exe @modList.lst

@@ -1,4 +1,4 @@
-module xf.leoBuild.GlobalParams;
+module xf.build.GlobalParams;
 
 private {
 	import tango.io.model.IFile;

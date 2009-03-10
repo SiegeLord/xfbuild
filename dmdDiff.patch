@@ -1,0 +1,122 @@
+diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/import.c dmd/import.c
+--- origDMD/import.c	2009-03-05 01:56:44 +0100
++++ dmd/import.c	2009-03-10 01:37:25 +0100
+@@ -112,8 +112,24 @@
+ }
+ 
+ 
++void printfImportName(Import* imp) {
++	if (imp->packages)
++	{
++	    for (size_t i = 0; i < imp->packages->dim; i++)
++	    {   Identifier *pid = (Identifier *)imp->packages->data[i];
++		printf("%s.", pid->toChars());
++	    }
++	}
++	printf("%s", imp->id->toChars());
++}
++
+ void Import::semantic(Scope *sc)
+ {
++    if (global.params.verbose) {
++	    printf("Import::semantic('");
++		printfImportName(this);
++		printf("')\n");
++	}
+     //printf("Import::semantic('%s')\n", toChars());
+ 
+     load(sc);
+@@ -162,6 +178,12 @@
+ 	sc = sc->pop();
+     }
+     //printf("-Import::semantic('%s'), pkg = %p\n", toChars(), pkg);
++
++    if (global.params.verbose) {
++	    printf("-Import::semantic('");
++		printfImportName(this);
++		printf("', '%s')\n", mod ? mod->srcfile->toChars() : "???");
++	}
+ }
+ 
+ void Import::semantic2(Scope *sc)
+diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/mars.c dmd/mars.c
+--- origDMD/mars.c	2009-03-05 01:56:44 +0100
++++ dmd/mars.c	2009-03-10 04:43:11 +0100
+@@ -980,7 +980,7 @@
+     {
+ 	m = (Module *)modules.data[i];
+ 	if (global.params.verbose)
+-	    printf("semantic  %s\n", m->toChars());
++	    printf("semantic  %s\n", m->toPrettyChars());
+ 	m->semantic();
+     }
+     if (global.errors)
+diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/module.c dmd/module.c
+--- origDMD/module.c	2009-03-05 01:56:44 +0100
++++ dmd/module.c	2009-03-09 23:13:20 +0100
+@@ -304,7 +304,7 @@
+     if (result)
+ 	m->srcfile = new File(result);
+ 
+-    if (global.params.verbose)
++/*    if (global.params.verbose)
+     {
+ 	printf("import    ");
+ 	if (packages)
+@@ -315,7 +315,7 @@
+ 	    }
+ 	}
+ 	printf("%s\t(%s)\n", ident->toChars(), m->srcfile->toChars());
+-    }
++    }*/
+ 
+     m->read(loc);
+     m->parse();
+diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/win32.mak dmd/win32.mak
+--- origDMD/win32.mak	2009-03-05 01:56:48 +0100
++++ dmd/win32.mak	2009-03-09 22:33:19 +0100
+@@ -4,10 +4,10 @@
+ # All Rights Reserved
+ # Build dmd with Digital Mars C++ compiler
+ 
+-D=
++D=C:\prog
+ SCROOT=$D\dm
+ INCLUDE=$(SCROOT)\include
+-CC=\dm\bin\dmc
++CC=C:\prog\dm\bin\dmc
+ LIBNT=$(SCROOT)\lib
+ SNN=$(SCROOT)\lib\snn
+ DIR=\dmd1
+@@ -151,7 +151,7 @@
+ #########################################
+ 
+ $(TARGET).exe : $(OBJS) win32.mak
+-	sc -o$(TARGET).exe $(OBJS) -cpp -mn -Ar $(LFLAGS)
++	C:\prog\dm\bin\sc -o$(TARGET).exe $(OBJS) -cpp -mn -Ar $(LFLAGS)
+ 
+ 
+ ##################### INCLUDE MACROS #####################
+@@ -167,11 +167,11 @@
+ 	msgsx
+ 
+ msgsx.exe : msgsx.c
+-	sc msgsx -mn -D$(TARGET) $(DEFINES) $(WINLIBS)
++	C:\prog\dm\bin\sc msgsx -mn -D$(TARGET) $(DEFINES) $(WINLIBS)
+ 
+ elxxx.c cdxxx.c optab.c debtab.c fltables.c tytab.c : \
+ 	$C\cdef.h $C\cc.h $C\oper.h $C\ty.h $C\optabgen.c
+-	sc -cpp -ooptabgen.exe $C\optabgen -DMARS -I$(TK) $(WINLIBS) #-L$(LINKS)
++	C:\prog\dm\bin\sc -cpp -ooptabgen.exe $C\optabgen -DMARS -I$(TK) $(WINLIBS) #-L$(LINKS)
+ 	optabgen
+ 
+ impcnvtab.c : impcnvgen.c
+@@ -179,7 +179,7 @@
+ 	impcnvgen
+ 
+ id.h id.c : idgen.c
+-	sc -cpp idgen
++	C:\prog\dm\bin\sc -cpp idgen
+ 	idgen
+ 
+ ##################### SPECIAL BUILDS #####################

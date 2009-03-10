@@ -123,7 +123,12 @@ scope class BuildTask {
 
 				auto name = arr[0].dup;
 				auto path = arr[1].dup;
-				auto time = Integer.toLong(arr[2]);
+				long time;
+				try {
+					time = Integer.toLong(arr[2]);
+				} catch (Exception e) {
+					throw new Exception("broken .deps file (line: " ~ line ~ ")");
+				}
 				auto deps = arr.length > 3 ? arr[3].dup : null;
 			
 				if(isIgnored(name))

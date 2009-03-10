@@ -33,6 +33,7 @@ class Module
 
 	bool isHeader()
 	{
+		assert (path.length > 0, name);
 		return path[$ - 1] == 'i';
 	}
 
@@ -112,10 +113,10 @@ class Module
 			line = TextUtil.trim(line);
 			
 			//if(moduleHeaderRegex.test(line))
-			if (auto arr = line.decomposeString(`module`, ` `, null))
+			if (auto arr = line.decomposeString(`module`, ` `, null, `;`))
 			{
 				//m.name = moduleHeaderRegex[1].dup;
-				m.name = arr[0];
+				m.name = arr[0].dup;
 				
 				if(globalParams.verbose)
 					Stdout.formatln("module name for file '{}': {}", path, m.name);

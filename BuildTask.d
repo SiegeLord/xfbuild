@@ -11,6 +11,7 @@ private {
 
 	import Path = tango.io.Path;
 	import tango.io.device.File;
+	import tango.io.device.FileMap;
 	import tango.io.stream.Lines;
 	import tango.text.Regex;
 	import Integer = tango.text.convert.Integer;
@@ -87,7 +88,7 @@ scope class BuildTask {
 		}
 		else
 		{
-			auto file = new File(".deps");
+			auto file = new FileMap(".deps");
 			scope(exit) file.close();
 			
 			foreach(line; new Lines!(char)(file))

@@ -67,7 +67,9 @@ bool link(ref Module[char[]] modules)
 		foreach(line; new Lines!(char)(process.stdout))
 		{
 			line = TextUtil.trim(line);
-			//Stdout.formatln("linker: '{}'", line);
+			if (line.length > 0) {
+				Stdout.formatln("linker: '{}'", line);
+			}
 		
 			try
 			{

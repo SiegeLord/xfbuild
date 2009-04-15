@@ -63,8 +63,8 @@ bool link(ref Module[char[]] modules)
 		
 		char[] currentFile = null;
 		Module currentModule = null;
-		
-		foreach(line; new Lines!(char)(process.stdout))
+
+		foreach(line; new Lines!(char)(process.stderr))
 		{
 			line = TextUtil.trim(line);
 			if (line.length > 0) {

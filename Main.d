@@ -91,7 +91,7 @@ void main(char[][] args) {
 					return;
 				
 				if(globalParams.outputFile is null)
-					throw new Exception("-o<filename> must be specified");
+					throw new Exception("-out needs to be specified");
 					
 				buildTask.execute();
 			}

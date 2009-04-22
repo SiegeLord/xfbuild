@@ -9,8 +9,13 @@ struct GlobalParams {
 	char[] compilerName = "dmd0xf";
 	char[][] compilerOptions;
 	char[] objPath = ".objs";
-	char[] objExt = ".obj";
-	char[] exeExt = ".exe";
+	version(Windows) {
+		char[] objExt = ".obj";
+		char[] exeExt = ".exe";
+	} else {
+		char[] objExt = ".o";
+		char[] exeExt = "";
+	}
 	char[] outputFile;
 	char[] workingPath;
 	char[][] ignore = ["tango"];

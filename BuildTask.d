@@ -209,22 +209,23 @@ scope class BuildTask {
 			file.flush;
 		}
 		
-		foreach(m; modules)
-		{
-			file.write(m.name);
-			file.write(" ");
-			file.write(m.path);
-			file.write(" ");
-			file.write(Integer.toString(m.timeDep));
-			file.write(" ");
-			
-			foreach(d; m.deps)
-			{
-				file.write(d.name);
-				file.write(",");
+		foreach(m; modules) {
+			if (m.path.length > 0) {
+				file.write(m.name);
+				file.write(" ");
+				file.write(m.path);
+				file.write(" ");
+				file.write(Integer.toString(m.timeDep));
+				file.write(" ");
+				
+				foreach(d; m.deps)
+				{
+					file.write(d.name);
+					file.write(",");
+				}
+				
+				file.write("\n");
 			}
-			
-			file.write("\n");
 		}
 	}
 

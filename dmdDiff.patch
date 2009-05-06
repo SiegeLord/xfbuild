@@ -1,30 +1,7 @@
 diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/import.c dmd/import.c
 --- origDMD/import.c	2009-04-06 02:47:20 +0200
-+++ dmd/import.c	2009-05-06 21:39:56 +0200
-@@ -112,9 +112,21 @@
- }
- 
- 
-+void printfImportName(Import* imp) {
-+	if (imp->packages)
-+	{
-+	    for (size_t i = 0; i < imp->packages->dim; i++)
-+	    {   Identifier *pid = (Identifier *)imp->packages->data[i];
-+		printf("%s.", pid->toChars());
-+	    }
-+	}
-+	printf("%s", imp->id->toChars());
-+}
-+
-+
- void Import::semantic(Scope *sc)
- {
--    //printf("Import::semantic('%s')\n", toChars());
-+	//printf("Import::semantic('%s')\n", toChars());
- 
-     load(sc);
- 
-@@ -162,6 +174,26 @@
++++ dmd/import.c	2009-05-07 00:09:15 +0200
+@@ -162,6 +162,26 @@
  	sc = sc->pop();
      }
      //printf("-Import::semantic('%s'), pkg = %p\n", toChars(), pkg);

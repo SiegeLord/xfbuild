@@ -1,1 +1,1 @@
-diff -u -x "*.exe" -x "*.swp" -x "*.map" -X dmd/sc.ini origDMD dmd | grep -v "^Only in dmd:" | grep -v "^Common subdirectories:"
+diff -u -x "*.exe" -x "*.swp" -x "*.map" -x win32.mak origDMD dmd | grep -v "^Only in dmd:" | grep -v "^Common subdirectories:"

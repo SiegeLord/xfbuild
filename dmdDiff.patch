@@ -1,7 +1,7 @@
-diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/import.c dmd/import.c
---- origDMD/import.c	2009-03-05 01:56:44 +0100
-+++ dmd/import.c	2009-03-10 01:37:25 +0100
-@@ -112,8 +112,24 @@
+diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/import.c dmd/import.c
+--- origDMD/import.c	2009-04-06 02:47:20 +0200
++++ dmd/import.c	2009-05-06 21:39:56 +0200
+@@ -112,9 +112,21 @@
  }
  
  
@@ -16,107 +16,108 @@ diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/import.c dmd/impo
 +	printf("%s", imp->id->toChars());
 +}
 +
++
  void Import::semantic(Scope *sc)
  {
-+    if (global.params.verbose) {
-+	    printf("Import::semantic('");
-+		printfImportName(this);
-+		printf("')\n");
-+	}
-     //printf("Import::semantic('%s')\n", toChars());
+-    //printf("Import::semantic('%s')\n", toChars());
++	//printf("Import::semantic('%s')\n", toChars());
  
      load(sc);
-@@ -162,6 +178,12 @@
+ 
+@@ -162,6 +174,26 @@
  	sc = sc->pop();
      }
      //printf("-Import::semantic('%s'), pkg = %p\n", toChars(), pkg);
 +
-+    if (global.params.verbose) {
-+	    printf("-Import::semantic('");
-+		printfImportName(this);
-+		printf("', '%s')\n", mod ? mod->srcfile->toChars() : "???");
++	if (global.params.moduleDeps != NULL) {
++		OutBuffer *const ob = global.params.moduleDeps;
++		ob->printf("%s (%s) : ",
++				sc->module->toPrettyChars(),
++				sc->module->srcfile->toChars()
++		);
++
++		if (this->packages) {
++		    for (size_t i = 0; i < this->packages->dim; i++) {
++				Identifier *pid = (Identifier *)this->packages->data[i];
++				ob->printf("%s.", pid->toChars());
++		    }
++		}
++		ob->printf("%s (%s)",
++				this->id->toChars(),
++				mod ? mod->srcfile->toChars() : "???"
++		);
++		ob->writenl();
 +	}
  }
  
  void Import::semantic2(Scope *sc)
-diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/mars.c dmd/mars.c
---- origDMD/mars.c	2009-03-05 01:56:44 +0100
-+++ dmd/mars.c	2009-03-10 04:43:11 +0100
-@@ -980,7 +980,7 @@
-     {
- 	m = (Module *)modules.data[i];
- 	if (global.params.verbose)
--	    printf("semantic  %s\n", m->toChars());
-+	    printf("semantic  %s\n", m->toPrettyChars());
- 	m->semantic();
-     }
-     if (global.errors)
-diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/module.c dmd/module.c
---- origDMD/module.c	2009-03-05 01:56:44 +0100
-+++ dmd/module.c	2009-03-09 23:13:20 +0100
-@@ -304,7 +304,7 @@
-     if (result)
- 	m->srcfile = new File(result);
+diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.c dmd/mars.c
+--- origDMD/mars.c	2009-04-06 02:47:20 +0200
++++ dmd/mars.c	2009-05-06 21:31:30 +0200
+@@ -208,6 +208,7 @@
+   -debug=ident   compile in debug code identified by ident\n\
+   -debuglib=name    set symbolic debug library to name\n\
+   -defaultlib=name  set default library to name\n\
++  -deps=filename write module dependencies to filename\n\
+   -g             add symbolic debug info\n\
+   -gc            add symbolic debug info, pretend to be C\n\
+   -H             generate 'header' file\n\
+@@ -294,6 +295,9 @@
+     global.params.objfiles = new Array();
+     global.params.ddocfiles = new Array();
  
--    if (global.params.verbose)
-+/*    if (global.params.verbose)
-     {
- 	printf("import    ");
- 	if (packages)
-@@ -315,7 +315,7 @@
++	global.params.moduleDeps = NULL;
++	global.params.moduleDepsFile = NULL;
++
+ #if TARGET_WINDOS
+     global.params.defaultlibname = "phobos";
+ #elif TARGET_LINUX || TARGET_OSX || TARGET_FREEBSD
+@@ -581,6 +585,11 @@
+ 		setdebuglib = 1;
+ 		global.params.debuglibname = p + 1 + 9;
  	    }
- 	}
- 	printf("%s\t(%s)\n", ident->toChars(), m->srcfile->toChars());
--    }
-+    }*/
++	    else if (memcmp(p + 1, "deps=", 5) == 0)
++	    {
++		global.params.moduleDepsFile = p + 1 + 5;
++		global.params.moduleDeps = new OutBuffer;
++	    }
+ 	    else if (memcmp(p + 1, "man", 3) == 0)
+ 	    {
+ #if _WIN32
+@@ -1047,6 +1056,15 @@
+     if (global.errors)
+ 	fatal();
  
-     m->read(loc);
-     m->parse();
-diff -u -x '*.exe' -x '*.swp' -x '*.map' -X dmd/sc.ini origDMD/win32.mak dmd/win32.mak
---- origDMD/win32.mak	2009-03-05 01:56:48 +0100
-+++ dmd/win32.mak	2009-03-09 22:33:19 +0100
-@@ -4,10 +4,10 @@
- # All Rights Reserved
- # Build dmd with Digital Mars C++ compiler
- 
--D=
-+D=C:\prog
- SCROOT=$D\dm
- INCLUDE=$(SCROOT)\include
--CC=\dm\bin\dmc
-+CC=C:\prog\dm\bin\dmc
- LIBNT=$(SCROOT)\lib
- SNN=$(SCROOT)\lib\snn
- DIR=\dmd1
-@@ -151,7 +151,7 @@
- #########################################
- 
- $(TARGET).exe : $(OBJS) win32.mak
--	sc -o$(TARGET).exe $(OBJS) -cpp -mn -Ar $(LFLAGS)
-+	C:\prog\dm\bin\sc -o$(TARGET).exe $(OBJS) -cpp -mn -Ar $(LFLAGS)
++	if (global.params.moduleDeps != NULL) {
++		assert (global.params.moduleDepsFile != NULL);
++
++		File deps(global.params.moduleDepsFile);
++		OutBuffer* ob = global.params.moduleDeps;
++		deps.setbuffer((void*)ob->data, ob->offset);
++		deps.write();
++	}
++
+     // Scan for functions to inline
+     if (global.params.useInline)
+     {
+diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.h dmd/mars.h
+--- origDMD/mars.h	2009-04-06 02:47:20 +0200
++++ dmd/mars.h	2009-05-06 21:00:27 +0200
+@@ -102,6 +102,7 @@
  
  
- ##################### INCLUDE MACROS #####################
-@@ -167,11 +167,11 @@
- 	msgsx
+ struct Array;
++struct OutBuffer;
  
- msgsx.exe : msgsx.c
--	sc msgsx -mn -D$(TARGET) $(DEFINES) $(WINLIBS)
-+	C:\prog\dm\bin\sc msgsx -mn -D$(TARGET) $(DEFINES) $(WINLIBS)
+ // Put command line switches in here
+ struct Param
+@@ -171,6 +172,9 @@
  
- elxxx.c cdxxx.c optab.c debtab.c fltables.c tytab.c : \
- 	$C\cdef.h $C\cc.h $C\oper.h $C\ty.h $C\optabgen.c
--	sc -cpp -ooptabgen.exe $C\optabgen -DMARS -I$(TK) $(WINLIBS) #-L$(LINKS)
-+	C:\prog\dm\bin\sc -cpp -ooptabgen.exe $C\optabgen -DMARS -I$(TK) $(WINLIBS) #-L$(LINKS)
- 	optabgen
+     const char *xmlname;	// filename for XML output
  
- impcnvtab.c : impcnvgen.c
-@@ -179,7 +179,7 @@
- 	impcnvgen
- 
- id.h id.c : idgen.c
--	sc -cpp idgen
-+	C:\prog\dm\bin\sc -cpp idgen
- 	idgen
- 
- ##################### SPECIAL BUILDS #####################
++	OutBuffer *moduleDeps;
++	char *moduleDepsFile;
++
+     // Hidden debug switches
+     char debuga;
+     char debugb;

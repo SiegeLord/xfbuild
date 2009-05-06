@@ -8,9 +8,11 @@ private {
 
 	import xf.utils.Profiler;
 
+	import tango.io.device.FileMap;
 	import tango.sys.Process;
 	import tango.io.stream.Lines;
 	import tango.text.Regex;
+	import Path = tango.io.Path;
 	import Ascii = tango.text.Ascii;
 
 	// TODO: better logging
@@ -43,21 +45,25 @@ static this() {
 
 
 
+class CompilerError : Exception {
+	this (char[] msg) {
+		super (msg);
+	}
+}
+
+
 void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref Module[] compileMore)
 {
-	Module[] moduleDepStack;
-	Module m() {
-		return moduleDepStack[$-1];
-	}
-	
-	
-	Module getModule(char[] name) {
+	Module getModule(char[] name, char[] path, bool* newlyEncountered = null) {
 		if (auto mp = name in modules) {
 			return *mp;
 		} else {
 			auto mod = new Module;
-			mod.name = name;
+			mod.name = name.dup;
+			mod.path = path.dup;
+			mod.timeModified = Path.modified(mod.path).ticks;
 			modules[mod.name] = mod;
+			compileMore ~= mod;
 			return mod;
 		}
 	}
@@ -66,56 +72,46 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 		mod.deps = null;
 	}
 	
-	compile(["-v"], compileArray, modules, (char[] line) {
-		profile!("output parsing")({
-			if (auto arr = line.decomposeString(`semantic`, ` `, null)) {
-			//if (moduleSemantic1Regex.test(line)) {
-				moduleDepStack = [getModule(arr[0].dup)];
-			}
-			
-			//else if (importSemanticStartRegex.test(line)) {
-			else if (auto arr = line.decomposeString(`Import::semantic('`, null, `')`)) {
-				//char[] modName = importSemanticStartRegex[1].dup;
-				char[] modName = arr[0].dup;
-				
-				if ("object" == modName) {
-				} else if (isIgnored(modName)) {
-					/+if (globalParams.verbose)		// omg spam :P
-						Stdout.formatln(modName ~ " is ignored");+/
-				} else {
-					moduleDepStack ~= getModule(modName);
-				}
-			}
-			
-			//else if (importSemanticEndRegex.test(line)) {
-			else if (auto arr = line.decomposeString(`-Import::semantic('`, null, `', '`, null, `')`)) {
-				/+char[] modName = importSemanticEndRegex[1].dup;
-				char[] modPath = importSemanticEndRegex[2].dup;+/
+	final depsFileName = "project.deps";
+	try {
+		compile(["-deps="~depsFileName], compileArray, modules, (char[] line) {
+			if(!isVerboseMsg(line) && TextUtil.trim(line).length)
+				Stderr(line).newline;
+		});
+	} catch (ProcessExecutionException e) {
+		throw new CompilerError(e.msg);
+	}
+	
+	scope depsFile = new FileMap(depsFileName);
+	scope(exit) {
+		depsFile.close();
+		Path.remove(depsFileName);
+	}
+
+	profile!("deps parsing")({
+		foreach (line; new Lines!(char)(depsFile)) {
+			auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` (`, null, `)`);
+			if (arr !is null) {
 				char[] modName = arr[0].dup;
 				char[] modPath = arr[1].dup;
 				
-				if (modName != "object" && !isIgnored(modName)) {
+				if (!isIgnored(modName)) {
 					assert (modPath.length > 0);
-					moduleDepStack = moduleDepStack[0..$-1];
+					Module m = getModule(modName, modPath);
 
-					//Stdout.formatln("file for module {} : {}", modName, modPath);
+					char[] depName = arr[2].dup;
+					char[] depPath = arr[3].dup;
 					
-					Module depMod = getModule(modName);
-					if (depMod.path is null) {	// newly encountered module
-						depMod.path = modPath;
-						if (!depMod.isHeader) {
-							depMod.timeModified = Path.modified(depMod.path).ticks;
-							compileMore ~= depMod;
-						}
-					} else assert (depMod.path.length > 0);
-					//Stdout.formatln("Module {} depends on {}", m.name, depMod.name);
-					m.deps ~= depMod;
+					if (depName != "object" && !isIgnored(depName)) {
+						assert (depPath.length > 0);
+						
+						Module depMod = getModule(depName, depPath);
+						//Stdout.formatln("Module {} depends on {}", m.name, depMod.name);
+						m.addDep(depMod);
+					}
 				}
 			}
-
-			else if(!isVerboseMsg(line) && TextUtil.trim(line).length)
-				Stderr(line).newline;
-		});
+		}
 	});
 	
 	foreach (mod; compileArray) {

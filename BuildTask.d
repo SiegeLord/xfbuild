@@ -77,7 +77,7 @@ scope class BuildTask {
 
 	private void readDeps()
 	{
-		if(!Path.exists(".deps"))
+		if(!Path.exists(globalParams.depsPath))
 		{
 			foreach (mainFile; mainFiles) {
 				auto m = Module.fromFile(mainFile);
@@ -88,7 +88,7 @@ scope class BuildTask {
 		}
 		else
 		{
-			auto file = new FileMap(".deps");
+			auto file = new FileMap(globalParams.depsPath);
 			scope(exit) file.close();
 			
 			foreach(line; new Lines!(char)(file))
@@ -192,7 +192,7 @@ scope class BuildTask {
 				foreach(d; m.depNames)
 				{
 					auto x = d in modules;
-					if(x) m.deps ~= *x;
+					if(x) m.addDep(*x);
 				}
 			}
 		}
@@ -200,11 +200,7 @@ scope class BuildTask {
 
 	private void writeDeps()
 	{
-		if (Path.exists(".deps")) {
-			Path.copy(".deps", ".deps.bak");
-		}
-		
-		scope file = new File(".deps", File.WriteCreate);
+		scope file = new File(globalParams.depsPath, File.WriteCreate);
 		scope(exit) {
 			file.flush;
 		}

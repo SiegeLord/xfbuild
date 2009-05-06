@@ -9,6 +9,13 @@ private {
 }
 
 
+class ProcessExecutionException : Exception {
+	this (char[] msg) {
+		super (msg);
+	}
+}
+
+
 
 void checkProcessFail(Process process)
 {
@@ -21,7 +28,7 @@ void checkProcessFail(Process process)
 		if(name.length > 255)
 			name = name[0 .. 255] ~ " [...]";
 	
-		throw new Exception(`"` ~ name ~ `" returned ` ~ Integer.toString(result.status));
+		throw new ProcessExecutionException(`"` ~ name ~ `" returned ` ~ Integer.toString(result.status));
 	}
 }
 

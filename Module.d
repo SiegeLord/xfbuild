@@ -84,9 +84,24 @@ class Module
 			~ globalParams.objExt;
 	}
 	
-	hash_t toHash()
-	{
+	override hash_t toHash() {
 		return typeid(typeof(path)).getHash(cast(void*)&path);
+	}
+	
+	
+	override int opCmp(Object rhs_) {
+		auto rhs = cast(Module)rhs_;
+		if (rhs is this) return 0;
+		if (this.path > rhs.path) return 1;
+		if (this.path < rhs.path) return -1;
+		return 0;
+	}
+	
+	
+	void addDep(Module mod) {
+		if (!hasDep(mod)) {
+			deps ~= mod;
+		}
 	}
 	
 	

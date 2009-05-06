@@ -1,8 +1,11 @@
 module xf.build.Main;
 
 private {
+	import tango.core.stacktrace.TraceExceptions;
+	
 	import xf.build.GlobalParams;
 	import xf.build.BuildTask;
+	import xf.build.Compiler : CompilerError;
 	import tango.util.ArgParser;
 	import tango.stdc.stdlib : exit;
 	
@@ -10,13 +13,39 @@ private {
 
 	// TODO: better logging
 	import tango.io.Stdout;
+	import tango.stdc.stdlib : exit;
 }
 
-void main(char[][] args) {
-	try
-	{
-		bool profiling = false;
 
+
+void printHelpAndQuit() {
+	Stdout(
+`xfBuild 0.2
+Copyright (C) 2009 Team0xf
+Usage:
+	xfbuild MainModule.d -oOutputFile { options } -- { compiler options }
+	
+Options:
+	-Xpackage    Doesn't compile any modules within the package
+	-full        Performs a full build
+	-clean       Removes object files after building
+	-redep       Removes the .deps file
+	-v           Prints the compilation commands
+	-profile     Dumps profiling info at the end
+`
+	).flush;
+	exit(0);
+}
+
+
+void main(char[][] args) {
+	if (1 == args.length) {
+		printHelpAndQuit;
+	}
+	
+	bool profiling = false;
+
+	try {
 		profile!("main")({
 			foreach(i, arg; args)
 			{
@@ -61,9 +90,14 @@ void main(char[][] args) {
 				globalParams.outputFile = arg;
 			});
 			
+			parser.bind("-", "X", (char[] arg)
+			{
+				globalParams.ignore ~= arg;
+			});
+
 			parser.bind("-", "redep",
 			{
-				Path.remove(".deps");
+				Path.remove(globalParams.depsPath);
 			});
 			
 			parser.bind("-", "v",
@@ -106,11 +140,7 @@ void main(char[][] args) {
 				Stdout.formatln("{}{}{}", node.bottleneck ? "*" : "", spaces[0..numSpaces], node.text);
 			}
 		}
-		
-		exit (0);
-	}
-	catch(Exception e)
-	{
-		Stdout(e).newline;
+	} catch (CompilerError) {
+		Stdout.formatln("Build failed.");
 	}
 }

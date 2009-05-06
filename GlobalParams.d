@@ -9,6 +9,7 @@ struct GlobalParams {
 	char[] compilerName = "dmd0xf";
 	char[][] compilerOptions;
 	char[] objPath = ".objs";
+	char[] depsPath = ".deps";
 	version(Windows) {
 		char[] objExt = ".obj";
 		char[] exeExt = ".exe";

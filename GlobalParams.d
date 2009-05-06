@@ -29,6 +29,7 @@ struct GlobalParams {
 	bool storeStrongSymbols = true; // TODO
 	bool oneAtATime = false;
 	char pathSep = FileConst.PathSeparatorChar;
+	int maxModulesToCompile = int.max;
 }
 
 GlobalParams globalParams;

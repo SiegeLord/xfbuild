@@ -8,6 +8,7 @@ private {
 	import xf.build.Compiler : CompilerError;
 	import tango.util.ArgParser;
 	import tango.stdc.stdlib : exit;
+	import Integer = tango.text.convert.Integer;
 	
 	import xf.utils.Profiler;
 
@@ -32,6 +33,7 @@ Options:
 	-redep       Removes the .deps file
 	-v           Prints the compilation commands
 	-profile     Dumps profiling info at the end
+	-modLimitNUM Compile max NUM modules at a time
 `
 	).flush;
 	exit(0);
@@ -93,6 +95,11 @@ void main(char[][] args) {
 			parser.bind("-", "X", (char[] arg)
 			{
 				globalParams.ignore ~= arg;
+			});
+
+			parser.bind("-", "modLimit", (char[] arg)
+			{
+				globalParams.maxModulesToCompile = Integer.parse(arg);
 			});
 
 			parser.bind("-", "redep",

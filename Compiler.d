@@ -334,10 +334,20 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 	
 	while (compileArray) {
 		compileMore = null;
+		
+		Module[] compileNow = compileArray;
+		Module[] compileLater = null;
+		
+		if (compileNow.length > globalParams.maxModulesToCompile) {
+			compileNow = compileArray[0..globalParams.maxModulesToCompile];
+			compileLater = compileArray[globalParams.maxModulesToCompile .. $];
+		}
+		
 		profile!("compileAndTrackDeps")({
-			compileAndTrackDeps(compileArray, modules, compileMore);
+			compileAndTrackDeps(compileNow, modules, compileMore);
 		});
+		
 		//Stdout.formatln("compileMore: {}", compileMore);
-		compileArray = compileMore;
+		compileArray = compileLater ~ compileMore;
 	}
 }

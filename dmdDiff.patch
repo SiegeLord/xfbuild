@@ -1,7 +1,7 @@
-diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/import.c dmd/import.c
+diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/import.c dmd/import.c
 --- origDMD/import.c	2009-04-06 02:47:20 +0200
 +++ dmd/import.c	2009-05-07 00:09:15 +0200
-@@ -162,6 +162,26 @@
+@@ -162,6 +162,26 @@ void Import::semantic(Scope *sc)
  	sc = sc->pop();
      }
      //printf("-Import::semantic('%s'), pkg = %p\n", toChars(), pkg);
@@ -28,10 +28,10 @@ diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/import.c dmd/impor
  }
  
  void Import::semantic2(Scope *sc)
-diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.c dmd/mars.c
+diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/mars.c dmd/mars.c
 --- origDMD/mars.c	2009-04-06 02:47:20 +0200
 +++ dmd/mars.c	2009-05-06 21:31:30 +0200
-@@ -208,6 +208,7 @@
+@@ -208,6 +208,7 @@ Usage:\n\
    -debug=ident   compile in debug code identified by ident\n\
    -debuglib=name    set symbolic debug library to name\n\
    -defaultlib=name  set default library to name\n\
@@ -39,7 +39,7 @@ diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.c dmd/mars.c
    -g             add symbolic debug info\n\
    -gc            add symbolic debug info, pretend to be C\n\
    -H             generate 'header' file\n\
-@@ -294,6 +295,9 @@
+@@ -294,6 +295,9 @@ int main(int argc, char *argv[])
      global.params.objfiles = new Array();
      global.params.ddocfiles = new Array();
  
@@ -49,7 +49,7 @@ diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.c dmd/mars.c
  #if TARGET_WINDOS
      global.params.defaultlibname = "phobos";
  #elif TARGET_LINUX || TARGET_OSX || TARGET_FREEBSD
-@@ -581,6 +585,11 @@
+@@ -581,6 +585,11 @@ int main(int argc, char *argv[])
  		setdebuglib = 1;
  		global.params.debuglibname = p + 1 + 9;
  	    }
@@ -61,7 +61,7 @@ diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.c dmd/mars.c
  	    else if (memcmp(p + 1, "man", 3) == 0)
  	    {
  #if _WIN32
-@@ -1047,6 +1056,15 @@
+@@ -1047,6 +1056,15 @@ int main(int argc, char *argv[])
      if (global.errors)
  	fatal();
  
@@ -77,10 +77,10 @@ diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.c dmd/mars.c
      // Scan for functions to inline
      if (global.params.useInline)
      {
-diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.h dmd/mars.h
+diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/mars.h dmd/mars.h
 --- origDMD/mars.h	2009-04-06 02:47:20 +0200
 +++ dmd/mars.h	2009-05-06 21:00:27 +0200
-@@ -102,6 +102,7 @@
+@@ -102,6 +102,7 @@ the target object file format:
  
  
  struct Array;
@@ -88,7 +88,7 @@ diff -u -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak origDMD/mars.h dmd/mars.h
  
  // Put command line switches in here
  struct Param
-@@ -171,6 +172,9 @@
+@@ -171,6 +172,9 @@ struct Param
  
      const char *xmlname;	// filename for XML output
  

@@ -6,7 +6,7 @@ BuildTask.d
 Compiler.d
 Linker.d
 Misc.d
-..\utils\Profiler.d
-..\utils\HardwareTimer.d
-..\utils\perf.d
-..\utils\Memory.d
+../utils/Profiler.d
+../utils/HardwareTimer.d
+../utils/perf.d
+../utils/Memory.d

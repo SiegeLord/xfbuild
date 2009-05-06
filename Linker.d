@@ -64,7 +64,13 @@ bool link(ref Module[char[]] modules)
 		char[] currentFile = null;
 		Module currentModule = null;
 		
-		foreach(line; new Lines!(char)(process.stdout))
+		version (Windows) {
+			auto procOut = process.stdout;
+		} else {
+			auto procOut = process.stderr;
+		}
+		
+		foreach (line; new Lines!(char)(procOut))
 		{
 			line = TextUtil.trim(line);
 			if (line.length > 0) {

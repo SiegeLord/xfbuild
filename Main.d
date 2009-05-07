@@ -40,7 +40,7 @@ Options:
 }
 
 
-void main(char[][] args) {
+int main(char[][] args) {
 	if (1 == args.length) {
 		printHelpAndQuit;
 	}
@@ -147,7 +147,10 @@ void main(char[][] args) {
 				Stdout.formatln("{}{}{}", node.bottleneck ? "*" : "", spaces[0..numSpaces], node.text);
 			}
 		}
+
+		return 0;
 	} catch (CompilerError) {
 		Stdout.formatln("Build failed.");
+		return 1;
 	}
 }

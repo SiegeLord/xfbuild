@@ -146,10 +146,19 @@ bool link(ref Module[char[]] modules)
 		{
 			checkProcessFail(process);
 		}
-		catch(Exception)
+		catch(Exception e)
 		{
+			version (Windows) {
+				// I don't know if Windows is affected too?
+			} else {
+				// DMD somehow puts some linker errors onto stdout :S
+				Stderr.copy(process.stdout).flush;
+			}
+
 			if(retryCompile && globalParams.verbose)
 				Stdout.formatln("ignoring linker error, will try to recompile");
+			else if(!retryCompile)
+				throw e; // rethrow exception since we're not going to retry what we did
 		}
 	}
 	

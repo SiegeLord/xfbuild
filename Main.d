@@ -41,11 +41,15 @@ Options:
 	-profile     Dump profiling info at the end
 	-modLimitNUM Compile max NUM modules at a time
 	-oOUTPUT     Put the resulting binary into OUTPUT
+	-cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]
 
 Environment Variables:
 	XFBUILDFLAGS You can put any option from above into that variable
-	             Note: Keep in mind that command line options override
-	                   those
+	               Note: Keep in mind that command line options override
+	                     those
+	DC           The D Compiler to use [default: dmd0xf]
+	               Note: XFBUILDFLAGS and command line options override
+	                     this
 `
 	).flush;
 	exit(status);
@@ -60,6 +64,8 @@ int main(char[][] args) {
 		}
 	}
 
+	globalParams.compilerName = Environment.get("DC", "dmd0xf");
+	
 	if (0 == envArgs.length && 1 == args.length) {
 		// wrong invocation, return failure
 		printHelpAndQuit(1);
@@ -113,6 +119,11 @@ int main(char[][] args) {
 				quit = true;
 			});
 			
+			parser.bind("-", "c", (char[] arg)
+			{
+				globalParams.compilerName = arg;
+			});
+
 			parser.bind("-", "o", (char[] arg)
 			{
 				globalParams.outputFile = arg;

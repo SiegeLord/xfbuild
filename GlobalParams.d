@@ -6,7 +6,7 @@ private {
 
 
 struct GlobalParams {
-	char[] compilerName = "dmd0xf";
+	char[] compilerName;
 	char[][] compilerOptions;
 	char[] objPath = ".objs";
 	char[] depsPath = ".deps";

@@ -3,46 +3,66 @@ module xf.build.Main;
 private {
 	import tango.core.stacktrace.TraceExceptions;
 	
-	import xf.build.GlobalParams;
 	import xf.build.BuildTask;
 	import xf.build.Compiler : CompilerError;
-	import tango.util.ArgParser;
-	import tango.stdc.stdlib : exit;
-	import Integer = tango.text.convert.Integer;
-	
+	import xf.build.GlobalParams;
 	import xf.utils.Profiler;
+
+	import tango.stdc.stdlib : exit;
+	import tango.sys.Environment : Environment;
+	import Integer = tango.text.convert.Integer;
+	import tango.text.Util : split;
+	import tango.util.ArgParser;
 
 	// TODO: better logging
 	import tango.io.Stdout;
-	import tango.stdc.stdlib : exit;
 }
 
 
 
-void printHelpAndQuit() {
+void printHelpAndQuit(int status) {
 	Stdout(
 `xfBuild 0.2
 Copyright (C) 2009 Team0xf
 Usage:
-	xfbuild MainModule.d -oOutputFile { options } -- { compiler options }
-	
+	xfBuild [-help|-clean]
+	xfBuild MODULE... -oOUTPUT [OPTION]... -- [COMPILER OPTION]...
+
+	Track dependencies and their changes of one or more MODULE(s),
+	compile them with COMPILER OPTION(s) and link all objects into OUTPUT.
+
 Options:
-	-Xpackage    Doesn't compile any modules within the package
-	-full        Performs a full build
-	-clean       Removes object files after building
-	-redep       Removes the .deps file
-	-v           Prints the compilation commands
-	-profile     Dumps profiling info at the end
+	-help        Show this help
+	-xPACKAGE    Don't compile any modules within the package
+	-full        Perform a full build
+	-clean       Remove object files
+	-redep       Remove the .deps file
+	-v           Print the compilation commands
+	-profile     Dump profiling info at the end
 	-modLimitNUM Compile max NUM modules at a time
+	-oOUTPUT     Put the resulting binary into OUTPUT
+
+Environment Variables:
+	XFBUILDFLAGS You can put any option from above into that variable
+	             Note: Keep in mind that command line options override
+	                   those
 `
 	).flush;
-	exit(0);
+	exit(status);
 }
 
-
 int main(char[][] args) {
-	if (1 == args.length) {
-		printHelpAndQuit;
+	char[][] envArgs;
+	
+	foreach (flag; split(Environment.get("XFBUILDFLAGS"), " ")) {
+		if (0 != flag.length) {
+			envArgs ~= flag;
+		}
+	}
+
+	if (0 == envArgs.length && 1 == args.length) {
+		// wrong invocation, return failure
+		printHelpAndQuit(1);
 	}
 	
 	bool profiling = false;
@@ -76,6 +96,12 @@ int main(char[][] args) {
 			bool quit = false;
 			bool removeObjs = false;
 			
+			parser.bind("-", "help",
+			{
+				// wanted invocation, return success
+				printHelpAndQuit(0);
+			});
+			
 			parser.bind("-", "full",
 			{
 				removeObjs = true;
@@ -92,7 +118,7 @@ int main(char[][] args) {
 				globalParams.outputFile = arg;
 			});
 			
-			parser.bind("-", "X", (char[] arg)
+			parser.bind("-", "x", (char[] arg)
 			{
 				globalParams.ignore ~= arg;
 			});
@@ -117,6 +143,8 @@ int main(char[][] args) {
 				profiling = true;
 			});
 
+			// remember to parse the XFBUILDFLAGS _before_ args passed in main()
+			parser.parse(envArgs);
 			parser.parse(args[1..$]);
 				
 			{
@@ -132,7 +160,10 @@ int main(char[][] args) {
 					return;
 				
 				if(globalParams.outputFile is null)
-					throw new Exception("-o<filename> needs to be specified");
+					throw new Exception("-oOUTPUT needs to be specified, see -help");
+					
+				if(mainFiles is null)
+					throw new Exception("At least one MODULE needs to be specified, see -help");
 					
 				buildTask.execute();
 			}

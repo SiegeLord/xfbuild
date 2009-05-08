@@ -1,0 +1,105 @@
+diff --git a/dmd.orig/import.c b/dmd.orig.try/import.c
+index 04abf1f..03de374 100644
+--- a/dmd.orig/import.c
++++ b/dmd.orig.try/import.c
+@@ -162,6 +162,29 @@ void Import::semantic(Scope *sc)
+ 	sc = sc->pop();
+     }
+     //printf("-Import::semantic('%s'), pkg = %p\n", toChars(), pkg);
++    if (global.params.moduleDeps != NULL)
++    {
++	OutBuffer *const ob = global.params.moduleDeps;
++	ob->printf("%s (%s) : ",
++	                         sc->module->toPrettyChars(),
++	                         sc->module->srcfile->toChars()
++	          );
++
++	if (this->packages)
++	{
++	    for (size_t i = 0; i < this->packages->dim; i++)
++	    {
++		Identifier *pid = (Identifier *)this->packages->data[i];
++		ob->printf("%s.", pid->toChars());
++	    }
++	}
++
++	ob->printf("%s (%s)",
++	                      this->id->toChars(),
++	                      mod ? mod->srcfile->toChars() : "???"
++	          );
++	ob->writenl();
++    }
+ }
+ 
+ void Import::semantic2(Scope *sc)
+diff --git a/dmd.orig/mars.c b/dmd.orig.try/mars.c
+index b1bc3c7..30e0c24 100644
+--- a/dmd.orig/mars.c
++++ b/dmd.orig.try/mars.c
+@@ -215,6 +215,7 @@ Usage:\n\
+   -debug=ident   compile in debug code identified by ident\n\
+   -debuglib=name    set symbolic debug library to name\n\
+   -defaultlib=name  set default library to name\n\
++  -deps=filename write module dependencies to filename\n\
+   -g             add symbolic debug info\n\
+   -gc            add symbolic debug info, pretend to be C\n\
+   -H             generate 'header' file\n\
+@@ -294,6 +295,8 @@ int main(int argc, char *argv[])
+     global.params.libfiles = new Array();
+     global.params.objfiles = new Array();
+     global.params.ddocfiles = new Array();
++    global.params.moduleDeps = NULL;
++    global.params.moduleDepsFile = NULL;
+ 
+ #if TARGET_WINDOS
+     global.params.defaultlibname = "phobos";
+@@ -589,6 +592,11 @@ int main(int argc, char *argv[])
+ 		setdebuglib = 1;
+ 		global.params.debuglibname = p + 1 + 9;
+ 	    }
++	    else if (memcmp(p + 1, "deps=", 5) == 0)
++	    {
++		global.params.moduleDepsFile = p + 1 + 5;
++		global.params.moduleDeps = new OutBuffer;
++	    }
+ 	    else if (memcmp(p + 1, "man", 3) == 0)
+ 	    {
+ #if _WIN32
+@@ -1055,6 +1063,16 @@ int main(int argc, char *argv[])
+     if (global.errors)
+ 	fatal();
+ 
++    if (global.params.moduleDeps != NULL)
++    {
++	      assert(global.params.moduleDepsFile != NULL);
++
++	      File deps(global.params.moduleDepsFile);
++	      OutBuffer* ob = global.params.moduleDeps;
++	      deps.setbuffer((void*)ob->data, ob->offset);
++	      deps.write();
++    }
++
+     // Scan for functions to inline
+     if (global.params.useInline)
+     {
+diff --git a/dmd.orig/mars.h b/dmd.orig.try/mars.h
+index 7a64cc6..2e79ed8 100644
+--- a/dmd.orig/mars.h
++++ b/dmd.orig.try/mars.h
+@@ -104,6 +104,7 @@ the target object file format:
+ 
+ 
+ struct Array;
++struct OutBuffer;
+ 
+ // Put command line switches in here
+ struct Param
+@@ -172,6 +173,8 @@ struct Param
+     const char *debuglibname;	// default library for debug builds
+ 
+     const char *xmlname;	// filename for XML output
++    OutBuffer *moduleDeps;
++    char *moduleDepsFile;
+ 
+     // Hidden debug switches
+     char debuga;

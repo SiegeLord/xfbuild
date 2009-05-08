@@ -19,7 +19,7 @@ struct GlobalParams {
 	}
 	char[] outputFile;
 	char[] workingPath;
-	char[][] ignore = ["tango"];
+	char[][] ignore;
 	bool verbose;
 	bool printCommands;
 	int numThreads = 4;

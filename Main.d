@@ -47,7 +47,7 @@ Environment Variables:
 	XFBUILDFLAGS You can put any option from above into that variable
 	               Note: Keep in mind that command line options override
 	                     those
-	DC           The D Compiler to use [default: dmd0xf]
+	D_COMPILER   The D Compiler to use [default: dmd0xf]
 	               Note: XFBUILDFLAGS and command line options override
 	                     this
 `
@@ -64,7 +64,7 @@ int main(char[][] args) {
 		}
 	}
 
-	globalParams.compilerName = Environment.get("DC", "dmd0xf");
+	globalParams.compilerName = Environment.get("D_COMPILER", "dmd0xf");
 	
 	if (0 == envArgs.length && 1 == args.length) {
 		// wrong invocation, return failure

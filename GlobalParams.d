@@ -20,7 +20,7 @@ struct GlobalParams {
 	}
 	char[] outputFile;
 	char[] workingPath;
-	char[][] ignore;
+	char[][] ignore = ["tango"];
 	
 	bool manageHeaders = false;
 	char[][] noHeaders;

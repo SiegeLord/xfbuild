@@ -22,11 +22,11 @@ private {
 
 void printHelpAndQuit(int status) {
 	Stdout(
-`xfBuild 0.2
+`xfbuild 0.2
 Copyright (C) 2009 Team0xf
 Usage:
-	xfBuild [-help|-clean]
-	xfBuild MODULE... -oOUTPUT [OPTION]... -- [COMPILER OPTION]...
+	xfbuild [-help|-clean]
+	xfbuild MODULE... -oOUTPUT [OPTION]... -- [COMPILER OPTION]...
 
 	Track dependencies and their changes of one or more MODULE(s),
 	compile them with COMPILER OPTION(s) and link all objects into OUTPUT.

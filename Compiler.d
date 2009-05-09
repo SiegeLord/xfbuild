@@ -58,6 +58,15 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 		if (auto mp = name in modules) {
 			return *mp;
 		} else {
+			path = Path.standard(path);
+			
+			// If there's a corresponding .d file, compile that instead of trying to process a .di
+			if (path.length > 3 && path[$-3..$] == ".di") {
+				if (Path.exists(path[0..$-1]) && Path.isFile(path[0..$-1])) {
+					path = path[0..$-1];
+				}
+			}
+			
 			auto mod = new Module;
 			mod.name = name.dup;
 			mod.path = path.dup;
@@ -74,7 +83,12 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 	
 	final depsFileName = "project.deps";
 	try {
-		compile(["-deps="~depsFileName], compileArray, modules, (char[] line) {
+		char[][] opts;
+		if (globalParams.manageHeaders) {
+			opts ~= "-H";
+		}
+		
+		compile(opts ~ ["-deps="~depsFileName], compileArray, modules, (char[] line) {
 			if(!isVerboseMsg(line) && TextUtil.trim(line).length)
 				Stderr(line).newline;
 		});
@@ -118,6 +132,21 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 		mod.timeDep = mod.timeModified;
 		mod.wasCompiled = true;
 		mod.needRecompile = false;
+		
+		// remove unwanted headers
+		if (!mod.isHeader) {
+			auto path = mod.path;
+			foreach (unwanted; globalParams.noHeaders) {
+				if (unwanted == mod.name || mod.name is null) {
+					if (".d" == path[$-2..$]) {
+						path = path ~ "i";
+						if (Path.exists(path) && Path.isFile(path)) {
+							Path.remove(path);
+						}
+					}
+				}
+			}
+		}
 	}
 }
 

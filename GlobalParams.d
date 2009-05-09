@@ -10,6 +10,7 @@ struct GlobalParams {
 	char[][] compilerOptions;
 	char[] objPath = ".objs";
 	char[] depsPath = ".deps";
+	char[] projectFile = "project.xfbuild";
 	version(Windows) {
 		char[] objExt = ".obj";
 		char[] exeExt = ".exe";
@@ -20,6 +21,10 @@ struct GlobalParams {
 	char[] outputFile;
 	char[] workingPath;
 	char[][] ignore;
+	
+	bool manageHeaders = false;
+	char[][] noHeaders;
+	
 	bool verbose;
 	bool printCommands;
 	int numThreads = 4;

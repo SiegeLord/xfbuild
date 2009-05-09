@@ -13,6 +13,9 @@ private {
 	import Integer = tango.text.convert.Integer;
 	import tango.text.Util : split;
 	import tango.util.ArgParser;
+	import tango.text.json.Json;
+	import tango.io.device.File;
+	import Path = tango.io.Path;
 
 	// TODO: better logging
 	import tango.io.Stdout;
@@ -22,8 +25,8 @@ private {
 
 void printHelpAndQuit(int status) {
 	Stdout(
-`xfbuild 0.2
-Copyright (C) 2009 Team0xf
+`xfBuild 0.3 :: Copyright (C) 2009 Team0xf
+
 Usage:
 	xfbuild [-help|-clean]
 	xfbuild MODULE... -oOUTPUT [OPTION]... -- [COMPILER OPTION]...
@@ -38,6 +41,7 @@ Options:
 	-clean       Remove object files
 	-redep       Remove the .deps file
 	-v           Print the compilation commands
+	-h           Manage headers for faster compilation
 	-profile     Dump profiling info at the end
 	-modLimitNUM Compile max NUM modules at a time
 	-oOUTPUT     Put the resulting binary into OUTPUT
@@ -153,10 +157,29 @@ int main(char[][] args) {
 			{
 				profiling = true;
 			});
+			
+			parser.bind("-", "h",
+			{
+				globalParams.manageHeaders = true;
+			});
 
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()
 			parser.parse(envArgs);
 			parser.parse(args[1..$]);
+			
+			{
+				if (Path.exists(globalParams.projectFile) && Path.isFile(globalParams.projectFile)) {
+					scope json = new Json!(char);
+					auto jobj = json.parse('{' ~ cast(char[])File.get(globalParams.projectFile) ~ '}').toObject.hashmap();
+					if (auto noHeaders = "noHeaders" in jobj) {
+						auto arr = (*noHeaders).toArray();
+						foreach (nh; arr) {
+							auto modName = nh.toString().dup;
+							globalParams.noHeaders ~= modName;
+						}
+					}
+				}
+			}
 				
 			{
 				scope buildTask = new BuildTask(mainFiles);

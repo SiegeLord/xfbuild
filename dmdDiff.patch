@@ -1,6 +1,6 @@
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/attrib.c dmd/attrib.c
 --- origDMD/attrib.c	2009-04-06 02:47:20 +0200
-+++ dmd/attrib.c	2009-05-09 03:10:29 +0200
++++ dmd/attrib.c	2009-05-10 00:32:53 +0200
 @@ -26,6 +26,7 @@
  #include "module.h"
  #include "parse.h"
@@ -22,7 +22,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
  /********************************* LinkDeclaration ****************************/
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/class.c dmd/class.c
 --- origDMD/class.c	2009-04-06 02:47:20 +0200
-+++ dmd/class.c	2009-05-09 01:57:05 +0200
++++ dmd/class.c	2009-05-10 00:32:53 +0200
 @@ -26,6 +26,7 @@
  #include "module.h"
  #include "expression.h"
@@ -50,7 +50,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
  }
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/declaration.c dmd/declaration.c
 --- origDMD/declaration.c	2009-04-06 02:47:20 +0200
-+++ dmd/declaration.c	2009-05-09 05:01:49 +0200
++++ dmd/declaration.c	2009-05-10 00:32:53 +0200
 @@ -1088,7 +1088,22 @@ Dsymbol *VarDeclaration::toAlias()
  
  void VarDeclaration::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
@@ -86,7 +86,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
      }
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/expression.c dmd/expression.c
 --- origDMD/expression.c	2009-04-06 02:47:20 +0200
-+++ dmd/expression.c	2009-05-09 04:57:52 +0200
++++ dmd/expression.c	2009-05-10 00:32:53 +0200
 @@ -2887,9 +2887,10 @@ int ArrayLiteralExp::canThrow()
  
  void ArrayLiteralExp::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
@@ -102,7 +102,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
  void ArrayLiteralExp::toMangleBuffer(OutBuffer *buf)
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/func.c dmd/func.c
 --- origDMD/func.c	2009-04-06 02:47:20 +0200
-+++ dmd/func.c	2009-05-09 22:14:05 +0200
++++ dmd/func.c	2009-05-10 00:32:53 +0200
 @@ -1249,8 +1249,11 @@ void FuncDeclaration::toCBuffer(OutBuffe
  
  void FuncDeclaration::bodyToCBuffer(OutBuffer *buf, HdrGenState *hgs)
@@ -188,7 +188,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
  /********************************* InvariantDeclaration ****************************/
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/hdrgen.h dmd/hdrgen.h
 --- origDMD/hdrgen.h	2009-04-06 02:47:20 +0200
-+++ dmd/hdrgen.h	2009-05-09 22:07:42 +0200
++++ dmd/hdrgen.h	2009-05-10 00:32:53 +0200
 @@ -15,13 +15,18 @@ struct HdrGenState
      int ddoc;		// 1 if generating Ddoc file
      int console;	// 1 if writing to console
@@ -210,8 +210,8 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
          int init;
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/import.c dmd/import.c
 --- origDMD/import.c	2009-04-06 02:47:20 +0200
-+++ dmd/import.c	2009-05-09 03:55:08 +0200
-@@ -162,6 +162,26 @@ void Import::semantic(Scope *sc)
++++ dmd/import.c	2009-05-10 23:19:08 +0200
+@@ -162,6 +162,65 @@ void Import::semantic(Scope *sc)
  	sc = sc->pop();
      }
      //printf("-Import::semantic('%s'), pkg = %p\n", toChars(), pkg);
@@ -223,22 +223,61 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
 +				sc->module->srcfile->toChars()
 +		);
 +
++		char* protStr = "";
++		switch (sc->protection) {
++			case PROTpublic: protStr = "public"; break;
++			case PROTprivate: protStr = "private"; break;
++			case PROTpackage: protStr = "package"; break;
++			default: break;
++		}
++		ob->writestring(protStr);
++		if (isstatic) {
++			ob->writestring(" static");
++		}
++		ob->writestring(" : ");
++
 +		if (this->packages) {
 +		    for (size_t i = 0; i < this->packages->dim; i++) {
 +				Identifier *pid = (Identifier *)this->packages->data[i];
 +				ob->printf("%s.", pid->toChars());
 +		    }
 +		}
++
 +		ob->printf("%s (%s)",
 +				this->id->toChars(),
 +				mod ? mod->srcfile->toChars() : "???"
 +		);
++
++	    if (aliasId) {
++			ob->printf(" -> %s", aliasId->toChars());
++		} else {
++			if (names.dim > 0) {
++				ob->writestring(" : ");
++				for (size_t i = 0; i < names.dim; i++)
++				{
++					if (i > 0) {
++						ob->writebyte(',');
++					}
++
++					Identifier *name = (Identifier *)names.data[i];
++					Identifier *alias = (Identifier *)aliases.data[i];
++
++					if (!alias) {
++						ob->printf("%s", name->toChars());
++						alias = name;
++					} else {
++						ob->printf("%s=%s", alias->toChars(), name->toChars());
++					}
++				}
++			}
++		}
++
 +		ob->writenl();
 +	}
  }
  
  void Import::semantic2(Scope *sc)
-@@ -253,7 +273,27 @@ void Import::toCBuffer(OutBuffer *buf, H
+@@ -253,7 +312,27 @@ void Import::toCBuffer(OutBuffer *buf, H
  	    buf->printf("%s.", pid->toChars());
  	}
      }
@@ -269,7 +308,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
  
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/mars.c dmd/mars.c
 --- origDMD/mars.c	2009-04-06 02:47:20 +0200
-+++ dmd/mars.c	2009-05-09 01:34:55 +0200
++++ dmd/mars.c	2009-05-10 00:32:53 +0200
 @@ -208,6 +208,7 @@ Usage:\n\
    -debug=ident   compile in debug code identified by ident\n\
    -debuglib=name    set symbolic debug library to name\n\
@@ -318,7 +357,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
      {
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/mars.h dmd/mars.h
 --- origDMD/mars.h	2009-04-06 02:47:20 +0200
-+++ dmd/mars.h	2009-05-06 21:00:27 +0200
++++ dmd/mars.h	2009-05-10 00:32:53 +0200
 @@ -102,6 +102,7 @@ the target object file format:
  
  
@@ -339,7 +378,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
      char debugb;
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/struct.c dmd/struct.c
 --- origDMD/struct.c	2009-04-06 02:47:20 +0200
-+++ dmd/struct.c	2009-05-09 01:57:12 +0200
++++ dmd/struct.c	2009-05-10 00:32:53 +0200
 @@ -19,6 +19,7 @@
  #include "module.h"
  #include "id.h"

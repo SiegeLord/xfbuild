@@ -104,17 +104,19 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 
 	profile!("deps parsing")({
 		foreach (line; new Lines!(char)(depsFile)) {
-			auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` (`, null, `)`);
+			auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` : `, null, ` (`, null, `)`, null);
 			if (arr !is null) {
 				char[] modName = arr[0].dup;
 				char[] modPath = arr[1].dup;
+
+				//char[] prot = arr[2];
 				
 				if (!isIgnored(modName)) {
 					assert (modPath.length > 0);
 					Module m = getModule(modName, modPath);
 
-					char[] depName = arr[2].dup;
-					char[] depPath = arr[3].dup;
+					char[] depName = arr[3].dup;
+					char[] depPath = arr[4].dup;
 					
 					if (depName != "object" && !isIgnored(depName)) {
 						assert (depPath.length > 0);

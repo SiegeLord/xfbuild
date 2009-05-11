@@ -1,6 +1,7 @@
 module xf.build.GlobalParams;
 
 private {
+	import xf.build.MT : ThreadPoolT;
 	import tango.io.model.IFile;
 }
 
@@ -35,6 +36,9 @@ struct GlobalParams {
 	bool oneAtATime = false;
 	char pathSep = FileConst.PathSeparatorChar;
 	int maxModulesToCompile = int.max;
+	int threadsToUse = 1;
 }
 
-GlobalParams globalParams;
+
+GlobalParams	globalParams;
+ThreadPoolT		threadPool;

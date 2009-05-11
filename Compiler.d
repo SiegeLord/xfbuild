@@ -5,6 +5,7 @@ private {
 	import xf.build.Module;
 	import xf.build.Process;
 	import xf.build.Misc;
+	import xf.build.MT;
 
 	import xf.utils.Profiler;
 
@@ -12,6 +13,7 @@ private {
 	import tango.sys.Process;
 	import tango.io.stream.Lines;
 	import tango.text.Regex;
+	import tango.util.log.Trace;
 	import Path = tango.io.Path;
 	import Ascii = tango.text.Ascii;
 
@@ -55,25 +57,32 @@ class CompilerError : Exception {
 void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref Module[] compileMore)
 {
 	Module getModule(char[] name, char[] path, bool* newlyEncountered = null) {
-		if (auto mp = name in modules) {
-			return *mp;
-		} else {
-			path = Path.standard(path);
-			
-			// If there's a corresponding .d file, compile that instead of trying to process a .di
-			if (path.length > 3 && path[$-3..$] == ".di") {
-				if (Path.exists(path[0..$-1]) && Path.isFile(path[0..$-1])) {
-					path = path[0..$-1];
+		Module worker() {
+			if (auto mp = name in modules) {
+				return *mp;
+			} else {
+				path = Path.standard(path);
+				
+				// If there's a corresponding .d file, compile that instead of trying to process a .di
+				if (path.length > 3 && path[$-3..$] == ".di") {
+					if (Path.exists(path[0..$-1]) && Path.isFile(path[0..$-1])) {
+						path = path[0..$-1];
+					}
 				}
+				
+				auto mod = new Module;
+				mod.name = name.dup;
+				mod.path = path.dup;
+				mod.timeModified = Path.modified(mod.path).ticks;
+				modules[mod.name] = mod;
+				compileMore ~= mod;
+				return mod;
 			}
-			
-			auto mod = new Module;
-			mod.name = name.dup;
-			mod.path = path.dup;
-			mod.timeModified = Path.modified(mod.path).ticks;
-			modules[mod.name] = mod;
-			compileMore ~= mod;
-			return mod;
+		}
+		version (MultiThreaded) {
+			synchronized (.threadPool) return worker();
+		} else {
+			return worker();
 		}
 	}
 	
@@ -81,14 +90,14 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 		mod.deps = null;
 	}
 	
-	final depsFileName = "project.deps";
+	final depsFileName = compileArray[0].name~".moduleDeps";
 	try {
 		char[][] opts;
 		if (globalParams.manageHeaders) {
 			opts ~= "-H";
 		}
 		
-		compile(opts ~ ["-deps="~depsFileName], compileArray, modules, (char[] line) {
+		compile(opts ~ ["-deps="~depsFileName], compileArray, (char[] line) {
 			if(!isVerboseMsg(line) && TextUtil.trim(line).length)
 				Stderr(line).newline;
 		});
@@ -102,7 +111,7 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 		Path.remove(depsFileName);
 	}
 
-	profile!("deps parsing")({
+	//profile!("deps parsing")({
 		foreach (line; new Lines!(char)(depsFile)) {
 			auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` : `, null, ` (`, null, `)`, null);
 			if (arr !is null) {
@@ -128,7 +137,7 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 				}
 			}
 		}
-	});
+	//});
 	
 	foreach (mod; compileArray) {
 		mod.timeDep = mod.timeModified;
@@ -157,7 +166,6 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 void compile(
 		char[][] extraArgs,
 		Module[] compileArray,
-		ref Module[char[]] modules,
 		void delegate(char[]) stdout
 ) {
 	void execute(char[][] args) {
@@ -375,7 +383,26 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 		}
 		
 		profile!("compileAndTrackDeps")({
-			compileAndTrackDeps(compileNow, modules, compileMore);
+			version (MultiThreaded) {
+				final int threads = globalParams.threadsToUse;
+				Module[][] threadNow = new Module[][threads];
+				Module[][] threadLater = new Module[][threads];
+
+				foreach (th; mtFor(.threadPool, 0, threads)) {
+					auto mods = compileNow[compileNow.length * th / threads .. compileNow.length * (th+1) / threads];
+					Trace.formatln("Thread {}: compiling {} modules", th, mods.length);
+					
+					if (mods.length > 0) {
+						compileAndTrackDeps(mods, modules, threadLater[th]);
+					}
+				}
+				
+				foreach (later; threadLater) {
+					compileLater ~= later;
+				}
+			} else {
+				compileAndTrackDeps(compileNow, modules, compileLater);
+			}
 		});
 		
 		//Stdout.formatln("compileMore: {}", compileMore);

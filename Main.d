@@ -16,6 +16,8 @@ private {
 	import tango.text.json.Json;
 	import tango.io.device.File;
 	import Path = tango.io.Path;
+	
+	import CPUid = xf.utils.CPUid;
 
 	// TODO: better logging
 	import tango.io.Stdout;
@@ -45,8 +47,10 @@ Options:
 	-profile     Dump profiling info at the end
 	-modLimitNUM Compile max NUM modules at a time
 	-oOUTPUT     Put the resulting binary into OUTPUT
-	-cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]
-
+	-cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]`);
+	version (MultiThreaded) Stdout(\n`	-threadsNUM  Number of theads to use [default: CPU core count]`);
+	Stdout(`
+	
 Environment Variables:
 	XFBUILDFLAGS You can put any option from above into that variable
 	               Note: Keep in mind that command line options override
@@ -102,6 +106,8 @@ int main(char[][] args) {
 					throw new Exception("unknown argument: " ~ arg);
 				}
 			});
+			
+			globalParams.threadsToUse = CPUid.coresPerCPU;
 			
 			bool quit = false;
 			bool removeObjs = false;
@@ -163,6 +169,11 @@ int main(char[][] args) {
 				globalParams.manageHeaders = true;
 			});
 
+			parser.bind("-", "threads", (char[] arg)
+			{
+				globalParams.threadsToUse = Integer.parse(arg);
+			});
+
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()
 			parser.parse(envArgs);
 			parser.parse(args[1..$]);
@@ -179,6 +190,10 @@ int main(char[][] args) {
 						}
 					}
 				}
+			}
+			
+			version (MultiThreaded) {
+				.threadPool = new ThreadPoolT(globalParams.threadsToUse);
 			}
 				
 			{

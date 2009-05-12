@@ -21,7 +21,7 @@ struct GlobalParams {
 	}
 	char[] outputFile;
 	char[] workingPath;
-	char[][] ignore = ["tango"];
+	char[][] ignore;
 	
 	bool manageHeaders = false;
 	char[][] noHeaders;

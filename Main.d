@@ -1,7 +1,7 @@
 module xf.build.Main;
 
 private {
-	import tango.core.stacktrace.TraceExceptions;
+	version(TraceExceptions) import tango.core.stacktrace.TraceExceptions;
 	
 	import xf.build.BuildTask;
 	import xf.build.Compiler : CompilerError;

@@ -3,7 +3,8 @@ module xf.build.Process;
 private {
 	import xf.build.GlobalParams;
 	import tango.sys.Process;
-	
+	import Integer = tango.text.convert.Integer : toString;
+
 	// TODO: better logging
 	import tango.io.Stdout;
 }

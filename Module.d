@@ -4,7 +4,6 @@ private {
 	import xf.build.GlobalParams;
 	import xf.build.Misc;
 	
-	import TextUtil = tango.text.Util;
 	import Path = tango.io.Path;
 	import tango.io.device.File;
 	import tango.io.stream.Lines;
@@ -15,6 +14,9 @@ private {
 	import tango.io.Stdout;
 }
 
+public {
+	import TextUtil = tango.text.Util;
+}
 
 /+private {
 	Regex moduleHeaderRegex;

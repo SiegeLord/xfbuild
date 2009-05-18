@@ -75,24 +75,12 @@ scope class BuildTask {
 	}
 	
 
-	private void readDeps()
-	{
-		if(!Path.exists(globalParams.depsPath))
-		{
-			foreach (mainFile; mainFiles) {
-				auto m = Module.fromFile(mainFile);
-				modules[m.name] = m;
-				//moduleStack ~= m;
-				m.needRecompile = true;
-			}
-		}
-		else
-		{
+	private void readDeps() {
+		if (Path.exists(globalParams.depsPath)) {
 			auto file = new FileMap(globalParams.depsPath);
 			scope(exit) file.close();
 			
-			foreach(line; new Lines!(char)(file))
-			{
+			foreach(line; new Lines!(char)(file)) {
 				line = TextUtil.trim(line);
 				
 				if(!line.length)
@@ -194,6 +182,17 @@ scope class BuildTask {
 					auto x = d in modules;
 					if(x) m.addDep(*x);
 				}
+			}
+		}
+
+
+		foreach (mainFile; mainFiles) {
+			auto m = Module.fromFile(mainFile);
+			
+			if (!(m.name in modules)) {
+				modules[m.name] = m;
+				//moduleStack ~= m;
+				m.needRecompile = true;
 			}
 		}
 	}

@@ -96,9 +96,18 @@ int main(char[][] args) {
 			char[][] mainFiles;
 			
 			auto parser = new ArgParser((char[] arg, uint) {
-				if (arg.length > 2 && arg[$-2..$] == ".d") {
+				if (arg.length > 2 && (arg[$-2..$] == ".d" || arg[$-1] == '/')) {
 					if (Path.exists(arg)) {
-						mainFiles ~= arg;
+						if (Path.isFolder(arg)) {
+							foreach (child; Path.children(arg)) {
+								char[] childPath = Path.join(child.path, child.name);
+								if (!Path.isFolder(childPath) && childPath.length > 2 && childPath[$-2..$] == ".d") {
+									mainFiles ~= childPath;
+								}
+							}
+						} else {
+							mainFiles ~= arg;
+						}
 					} else {
 						throw new Exception("File not found: " ~ arg);
 					}

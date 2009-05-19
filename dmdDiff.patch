@@ -1,11 +1,11 @@
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/import.c dmd/import.c
 --- origDMD/import.c	2009-04-06 02:47:20 +0200
-+++ dmd/import.c	2009-05-19 19:10:30 +0200
++++ dmd/import.c	2009-05-19 19:20:01 +0200
 @@ -112,6 +112,27 @@ void Import::load(Scope *sc)
  }
  
  
-+char* escapeFileName(char* fname, char* buffer, int bufLen) {
++char* escapePath(char* fname, char* buffer, int bufLen) {
 +	char* res = buffer;
 +	bufLen -= 2;	// for \0 and an occasional escape char
 +	int dst = 0;
@@ -40,7 +40,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
 +		OutBuffer *const ob = global.params.moduleDeps;
 +		ob->printf("%s (%s) : ",
 +				sc->module->toPrettyChars(),
-+				escapeFileName(sc->module->srcfile->toChars(), fnameBuf, sizeof(fnameBuf) / sizeof(*fnameBuf))
++				escapePath(sc->module->srcfile->toChars(), fnameBuf, sizeof(fnameBuf) / sizeof(*fnameBuf))
 +		);
 +
 +		char* protStr = "";
@@ -65,7 +65,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
 +
 +		ob->printf("%s (%s)",
 +				this->id->toChars(),
-+				mod ? escapeFileName(mod->srcfile->toChars(), fnameBuf, sizeof(fnameBuf) / sizeof(*fnameBuf)) : "???"
++				mod ? escapePath(mod->srcfile->toChars(), fnameBuf, sizeof(fnameBuf) / sizeof(*fnameBuf)) : "???"
 +		);
 +
 +	    if (aliasId) {

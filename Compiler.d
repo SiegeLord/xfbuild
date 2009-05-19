@@ -54,6 +54,20 @@ class CompilerError : Exception {
 }
 
 
+private char[] unescapePath(char[] path) {
+	char[] res = (new char[path.length])[0..0];
+	for (int i = 0; i < path.length; ++i) {
+		switch (path[i]) {
+			case '\\': ++i;
+				// fall through
+			default:
+				res ~= path[i];
+		}
+	}
+	return res;
+}
+
+
 void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref Module[] compileMore)
 {
 	Module getModule(char[] name, char[] path, bool* newlyEncountered = null) {
@@ -116,7 +130,7 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 			auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` : `, null, ` (`, null, `)`, null);
 			if (arr !is null) {
 				char[] modName = arr[0].dup;
-				char[] modPath = arr[1].dup;
+				char[] modPath = unescapePath(arr[1].dup);
 
 				//char[] prot = arr[2];
 				
@@ -125,7 +139,7 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 					Module m = getModule(modName, modPath);
 
 					char[] depName = arr[3].dup;
-					char[] depPath = arr[4].dup;
+					char[] depPath = unescapePath(arr[4].dup);
 					
 					if (depName != "object" && !isIgnored(depName)) {
 						assert (depPath.length > 0);
@@ -371,6 +385,7 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 	
 	Module[] compileMore;
 	
+	bool firstPass = true;
 	while (compileArray) {
 		compileMore = null;
 		
@@ -406,6 +421,19 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 		});
 		
 		//Stdout.formatln("compileMore: {}", compileMore);
-		compileArray = compileLater ~ compileMore;
+		
+		auto next = compileLater ~ compileMore;
+		
+		/*
+			In the second pass, the modules from the first one will be compiled anyway
+			we'll pass them again to the compiler so it has a chance of better symbol placement
+		*/
+		if (firstPass && next.length > 0) {
+			compileArray ~= next;
+		} else {
+			compileArray = next;
+		}
+		
+		firstPass = false;
 	}
 }

@@ -1,16 +1,46 @@
 diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.swp' -x '*.map' -x win32.mak -rpu origDMD/import.c dmd/import.c
 --- origDMD/import.c	2009-04-06 02:47:20 +0200
-+++ dmd/import.c	2009-05-16 18:59:19 +0200
-@@ -162,6 +162,65 @@ void Import::semantic(Scope *sc)
++++ dmd/import.c	2009-05-19 19:10:30 +0200
+@@ -112,6 +112,27 @@ void Import::load(Scope *sc)
+ }
+ 
+ 
++char* escapeFileName(char* fname, char* buffer, int bufLen) {
++	char* res = buffer;
++	bufLen -= 2;	// for \0 and an occasional escape char
++	int dst = 0;
++	for (; dst < bufLen && *fname; ++dst, ++fname) {
++		switch (*fname) {
++			case '(':
++			case ')':
++			case '\\':
++				buffer[dst++] = '\\';
++				// fall through
++
++			default:
++				buffer[dst] = *fname;
++		}
++	}
++	buffer[dst] = '\0';
++	return buffer;
++}
++
++
+ void Import::semantic(Scope *sc)
+ {
+     //printf("Import::semantic('%s')\n", toChars());
+@@ -162,6 +183,67 @@ void Import::semantic(Scope *sc)
  	sc = sc->pop();
      }
      //printf("-Import::semantic('%s'), pkg = %p\n", toChars(), pkg);
 +
 +	if (global.params.moduleDeps != NULL) {
++		char fnameBuf[262];		// MAX_PATH+2
++
 +		OutBuffer *const ob = global.params.moduleDeps;
 +		ob->printf("%s (%s) : ",
 +				sc->module->toPrettyChars(),
-+				sc->module->srcfile->toChars()
++				escapeFileName(sc->module->srcfile->toChars(), fnameBuf, sizeof(fnameBuf) / sizeof(*fnameBuf))
 +		);
 +
 +		char* protStr = "";
@@ -35,7 +65,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
 +
 +		ob->printf("%s (%s)",
 +				this->id->toChars(),
-+				mod ? mod->srcfile->toChars() : "???"
++				mod ? escapeFileName(mod->srcfile->toChars(), fnameBuf, sizeof(fnameBuf) / sizeof(*fnameBuf)) : "???"
 +		);
 +
 +	    if (aliasId) {
@@ -67,7 +97,7 @@ diff -d --strip-trailing-cr --ignore-tab-expansion -x '*.obj' -x '*.exe' -x '*.s
  }
  
  void Import::semantic2(Scope *sc)
-@@ -253,7 +312,27 @@ void Import::toCBuffer(OutBuffer *buf, H
+@@ -253,7 +335,27 @@ void Import::toCBuffer(OutBuffer *buf, H
  	    buf->printf("%s.", pid->toChars());
  	}
      }

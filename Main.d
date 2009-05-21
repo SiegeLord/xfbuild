@@ -46,6 +46,7 @@ Options:
 	-h           Manage headers for faster compilation
 	-profile     Dump profiling info at the end
 	-modLimitNUM Compile max NUM modules at a time
+	-oq          Use -oq when compiling (only supported by ldc)
 	-oOUTPUT     Put the resulting binary into OUTPUT
 	-cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]`);
 	version (MultiThreaded) Stdout(\n`	-threadsNUM  Number of theads to use [default: CPU core count]`);
@@ -183,6 +184,11 @@ int main(char[][] args) {
 			parser.bind("-", "threads", (char[] arg)
 			{
 				globalParams.threadsToUse = Integer.parse(arg);
+			});
+
+			parser.bind("-", "oq",
+			{
+				globalParams.useOQ = true;
 			});
 
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()

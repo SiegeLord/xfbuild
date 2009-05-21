@@ -194,121 +194,18 @@ void compile(
 		//Stdout.formatln("process finished");
 	}
 	
-	if(globalParams.oneAtATime)
-	{
-		foreach(m; compileArray.dup)
-		{
-			if(m.isHeader)
-				continue;
-
-			char[][] args;
-			args ~= globalParams.compilerName;
-			args ~= globalParams.compilerOptions;
-			args ~= "-c";
-			args ~= "-of" ~ m.objFile;
-			args ~= m.path;
-			args ~= extraArgs;
-			
-			execute(args);
-		}
-	}
-	else if(!globalParams.dmdUseOP)
-	{
-		void doGroup(Module[] group)
-		{
-			char[][] args;
-			args ~= globalParams.compilerName;
-			args ~= globalParams.compilerOptions;
-			args ~= "-c";
-			args ~= extraArgs;
-
-			foreach(m; group)
-			{
-				//if(m.wasCompiled)
-				//	continue;
-			
-				args ~= m.path;
-			}
-
-			execute(args);
-			
-			foreach(m; group)
-			{
-				//if(m.wasCompiled)
-				//	continue;
-				
-				Path.rename(m.lastName ~ globalParams.objExt, m.objFile);
-			}
-		}
-		
-		/+bool[Module] done;
-		Module[][] passes = new Module[][1];
-
-		foreach(a; compileArray)
-		{
-			if(cast(bool)(a in done))
-				continue;
-				
-			size_t count = 0;
-			
-			auto lastName = a.lastName;
-			
-			foreach(b; compileArray)
-			{
-				if(a is b)
-					continue;
-					
-				if(icompare(lastName, b.lastName) == 0)
-				{
-					++count;
-					done[b] = true;
-					
-					if(passes.length <= count)
-						passes.length = count + 1;
-					
-					passes[count] ~= b;
-				}
-			}
-			
-			passes[0] ~= a;
-		}+/
-		
-		int[char[]] lastNames;
-		Module[][] passes;
-
-		foreach(m; compileArray)
-		{
-			char[] lastName = Ascii.toLower(m.lastName.dup);
-			
-			int group;
-
-			if(lastName in lastNames)
-				group = ++lastNames[lastName];
-			else
-				group = lastNames[lastName] = 0;
-
-			if(passes.length <= group) passes.length = group + 1;
-			passes[group] ~= m;
-		}
-
-		//foreach(pass; passes)
-		//	Stdout(pass).newline;
-		
-		foreach(pass; passes)
-		{
-			if(!pass.length)
-				continue;
-
-			doGroup(pass);
-		}
-	}
-	else if(compileArray.length)
+	if(compileArray.length)
 	{
 		char[][] args;
 		args ~= globalParams.compilerName;
 		args ~= globalParams.compilerOptions;
 		args ~= "-c";
-		args ~= "-op";
+		if (!globalParams.useOQ) {
+			args ~= "-op";
+		} else {
+			args ~= "-oq";
+			args ~= "-od" ~ globalParams.objPath;
+		}
 		args ~= extraArgs;
 
 		foreach(m; compileArray)
@@ -318,8 +215,10 @@ void compile(
 		
 		execute(args);
 		
-		foreach(m; compiled)
-			Path.rename(m.objFileInFolder, m.objFile);
+		if (!globalParams.useOQ) {
+			foreach(m; compiled)
+				Path.rename(m.objFileInFolder, m.objFile);
+		}
 	}
 }
 

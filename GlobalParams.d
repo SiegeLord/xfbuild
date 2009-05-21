@@ -30,10 +30,9 @@ struct GlobalParams {
 	bool printCommands;
 	int numThreads = 4;
 	bool depCompileUseMT = true;
-	bool dmdUseOP = true;
+	bool useOQ = false;
 	bool recompileOnUndefinedReference = false;
 	bool storeStrongSymbols = true; // TODO
-	bool oneAtATime = false;
 	char pathSep = FileConst.PathSeparatorChar;
 	int maxModulesToCompile = int.max;
 	int threadsToUse = 1;

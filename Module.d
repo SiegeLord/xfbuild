@@ -73,16 +73,13 @@ class Module
 	
 	char[] objFile()
 	{
-		//if(dmdUseOP)
-		//	return objFileInFolder;
-	
 		if(objFile_)
 			return objFile_;
 			
 		return objFile_ =
 			globalParams.objPath
 			~ globalParams.pathSep
-			~ TextUtil.replace(name.dup, '.', '-')
+			~ (globalParams.useOQ ? name : TextUtil.replace(name.dup, '.', '-'))
 			~ globalParams.objExt;
 	}
 	

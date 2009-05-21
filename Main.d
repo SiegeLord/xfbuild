@@ -31,7 +31,7 @@ void printHelpAndQuit(int status) {
 
 Usage:
 	xfbuild [-help|-clean]
-	xfbuild MODULE... -oOUTPUT [OPTION]... -- [COMPILER OPTION]...
+	xfbuild MODULE... [OPTION]... -- [COMPILER OPTION]...
 
 	Track dependencies and their changes of one or more MODULE(s),
 	compile them with COMPILER OPTION(s) and link all objects into OUTPUT.
@@ -41,7 +41,7 @@ Options:
 	-xPACKAGE    Don't compile any modules within the package
 	-full        Perform a full build
 	-clean       Remove object files
-	-redep       Remove the .deps file
+	-redep       Remove the dependency file
 	-v           Print the compilation commands
 	-h           Manage headers for faster compilation
 	-profile     Dump profiling info at the end
@@ -49,7 +49,7 @@ Options:
 	-DDEPS       Put the resulting dependencies into DEPS [default: .deps]
 	-OOBJS       Put compiled objects into OBJS [default: .objs]
 	-q           Use -oq when compiling (only supported by ldc)
-	-oOUTPUT     Put the resulting binary into OUTPUT
+	-oOUTPUT     Link objects into the resulting binary OUTPUT
 	-cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]`);
 	version (MultiThreaded) Stdout(\n`	-threadsNUM  Number of theads to use [default: CPU core count]`);
 	Stdout(`
@@ -237,9 +237,6 @@ int main(char[][] args) {
 				if(quit)
 					return;
 				
-				if(globalParams.outputFile is null)
-					throw new Exception("-oOUTPUT needs to be specified, see -help");
-					
 				if(mainFiles is null)
 					throw new Exception("At least one MODULE needs to be specified, see -help");
 					

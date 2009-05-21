@@ -69,6 +69,10 @@ scope class BuildTask {
 	
 	
 	bool link() {
+		if (globalParams.outputFile is null) {
+			return false;
+		}
+
 		return profile!("BuildTask.link")({
 			return .link(modules);
 		});

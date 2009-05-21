@@ -125,6 +125,7 @@ int main(char[][] args) {
 			
 			bool quit = false;
 			bool removeObjs = false;
+			bool removeDeps = false;
 			
 			parser.bind("-", "help",
 			{
@@ -175,7 +176,7 @@ int main(char[][] args) {
 
 			parser.bind("-", "redep",
 			{
-				Path.remove(globalParams.depsPath);
+				removeDeps = true;
 			});
 			
 			parser.bind("-", "v",
@@ -230,7 +231,10 @@ int main(char[][] args) {
 				
 				if(!Path.exists(globalParams.objPath))
 					Path.createFolder(globalParams.objPath);
-				
+
+				if(removeDeps)
+					Path.remove(globalParams.depsPath);
+
 				if(removeObjs)
 					buildTask.removeObjFiles();
 				

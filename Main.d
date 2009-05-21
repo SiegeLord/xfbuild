@@ -46,7 +46,9 @@ Options:
 	-h           Manage headers for faster compilation
 	-profile     Dump profiling info at the end
 	-modLimitNUM Compile max NUM modules at a time
-	-oq          Use -oq when compiling (only supported by ldc)
+	-DDEPS       Put the resulting dependencies into DEPS [default: .deps]
+	-OOBJS       Put compiled objects into OBJS [default: .objs]
+	-q           Use -oq when compiling (only supported by ldc)
 	-oOUTPUT     Put the resulting binary into OUTPUT
 	-cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]`);
 	version (MultiThreaded) Stdout(\n`	-threadsNUM  Number of theads to use [default: CPU core count]`);
@@ -146,6 +148,16 @@ int main(char[][] args) {
 				globalParams.compilerName = arg;
 			});
 
+			parser.bind("-", "O", (char[] arg)
+			{
+				globalParams.objPath = arg;
+			});
+
+			parser.bind("-", "D", (char[] arg)
+			{
+				globalParams.depsPath = arg;
+			});
+
 			parser.bind("-", "o", (char[] arg)
 			{
 				globalParams.outputFile = arg;
@@ -186,7 +198,7 @@ int main(char[][] args) {
 				globalParams.threadsToUse = Integer.parse(arg);
 			});
 
-			parser.bind("-", "oq",
+			parser.bind("-", "q",
 			{
 				globalParams.useOQ = true;
 			});

@@ -31,7 +31,7 @@ struct GlobalParams {
 	int numThreads = 4;
 	bool depCompileUseMT = true;
 	bool dmdUseOP = true;
-	bool recompileOnUndefinedReference = true;
+	bool recompileOnUndefinedReference = false;
 	bool storeStrongSymbols = true; // TODO
 	bool oneAtATime = false;
 	char pathSep = FileConst.PathSeparatorChar;

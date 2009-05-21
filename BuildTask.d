@@ -156,7 +156,7 @@ scope class BuildTask {
 					//moduleStack ~= m;
 				}
 				
-				foreach(dep; TextUtil.patterns(deps, ","))
+				if (deps) foreach(dep; TextUtil.patterns(deps, ","))
 				{
 					if(!dep.length)	
 						continue;

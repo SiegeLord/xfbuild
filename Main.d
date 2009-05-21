@@ -66,9 +66,11 @@ Environment Variables:
 int main(char[][] args) {
 	char[][] envArgs;
 	
-	foreach (flag; split(Environment.get("XFBUILDFLAGS"), " ")) {
-		if (0 != flag.length) {
-			envArgs ~= flag;
+	if (Environment.get("XFBUILDFLAGS")) {
+		foreach (flag; split(Environment.get("XFBUILDFLAGS"), " ")) {
+			if (0 != flag.length) {
+				envArgs ~= flag;
+			}
 		}
 	}
 
@@ -238,8 +240,8 @@ int main(char[][] args) {
 		}
 
 		return 0;
-	} catch (CompilerError) {
-		Stdout.formatln("Build failed.");
+	} catch (CompilerError e) {
+		Stdout.formatln("Build failed: {}", e);
 		return 1;
 	}
 }

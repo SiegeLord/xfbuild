@@ -100,9 +100,6 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 		}
 	}
 	
-	foreach (mod; compileArray) {
-		mod.deps = null;
-	}
 	
 	final depsFileName = compileArray[0].name~".moduleDeps";
 	try {
@@ -117,6 +114,12 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 		});
 	} catch (ProcessExecutionException e) {
 		throw new CompilerError(e.msg);
+	}
+
+	// This must be done after the compilation so if the compiler errors out,
+	// then we will keep the old deps instead of clearing them
+	foreach (mod; compileArray) {
+		mod.deps = null;
 	}
 	
 	scope depsFile = new FileMap(depsFileName);

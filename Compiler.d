@@ -199,28 +199,76 @@ void compile(
 	
 	if(compileArray.length)
 	{
-		char[][] args;
-		args ~= globalParams.compilerName;
-		args ~= globalParams.compilerOptions;
-		args ~= "-c";
-		if (!globalParams.useOQ) {
-			args ~= "-op";
-		} else {
-			args ~= "-oq";
-			args ~= "-od" ~ globalParams.objPath;
-		}
-		args ~= extraArgs;
+		if(!globalParams.useOP && !globalParams.useOQ)
+		{
+			void doGroup(Module[] group)
+			{
+				char[][] args;
 
-		foreach(m; compileArray)
-			args ~= m.path;
+				args ~= globalParams.compilerName;
+				args ~= globalParams.compilerOptions;
+				args ~= "-c";
+				args ~= extraArgs;
+
+				foreach(m; group)
+					args ~= m.path;
+
+				execute(args);
+
+				foreach(m; group)
+					Path.rename(m.lastName ~ globalParams.objExt, m.objFile);
+			}
+
+			int[char[]] lastNames;
+			Module[][] passes;
+
+			foreach(m; compileArray)
+			{
+				char[] lastName = Ascii.toLower(m.lastName.dup);
+				int group;
+
+				if(lastName in lastNames)
+					group = ++lastNames[lastName];
+				else
+					group = lastNames[lastName] = 0;
+
+				if(passes.length <= group) passes.length = group + 1;
+				passes[group] ~= m;
+			}
+
+			foreach(pass; passes)
+			{
+				if(!pass.length)
+					continue;
+
+				doGroup(pass);
+			}
+		}
+		else
+		{
+			char[][] args;
+			args ~= globalParams.compilerName;
+			args ~= globalParams.compilerOptions;
+			args ~= "-c";
+			if (!globalParams.useOQ) {
+				args ~= "-op";
+			} else {
+				args ~= "-oq";
+				args ~= "-od" ~ globalParams.objPath;
+			}
+			args ~= extraArgs;
+
+			foreach(m; compileArray)
+				args ~= m.path;
+				
+			auto compiled = compileArray.dup;
 			
-		auto compiled = compileArray.dup;
-		
-		execute(args);
-		
-		if (!globalParams.useOQ) {
-			foreach(m; compiled)
-				Path.rename(m.objFileInFolder, m.objFile);
+			execute(args);
+			
+			if (!globalParams.useOQ) {
+				foreach(m; compiled)
+					Path.rename(m.objFileInFolder, m.objFile);
+			}
 		}
 	}
 }

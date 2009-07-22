@@ -31,11 +31,13 @@ struct GlobalParams {
 	int numThreads = 4;
 	bool depCompileUseMT = true;
 	bool useOQ = false;
+	bool useOP = true;
 	bool recompileOnUndefinedReference = false;
 	bool storeStrongSymbols = true; // TODO
 	char pathSep = FileConst.PathSeparatorChar;
 	int maxModulesToCompile = int.max;
 	int threadsToUse = 1;
+	bool nolink = false;
 }
 
 

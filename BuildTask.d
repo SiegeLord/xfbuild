@@ -54,7 +54,10 @@ scope class BuildTask {
 	
 	void execute() {
 		profile!("BuildTask.execute")({
-			do compile(); while(link());
+			if(globalParams.nolink)
+				compile();
+			else
+				do compile(); while(link());
 		});
 	}
 	

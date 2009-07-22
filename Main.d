@@ -204,6 +204,16 @@ int main(char[][] args) {
 				globalParams.useOQ = true;
 			});
 
+			parser.bind("-", "noop",
+			{
+				globalParams.useOP = false;
+			});
+
+			parser.bind("-", "nolink",
+			{
+				globalParams.nolink = true;
+			});
+
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()
 			parser.parse(envArgs);
 			parser.parse(args[1..$]);

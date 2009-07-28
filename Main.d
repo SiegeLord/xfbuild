@@ -27,31 +27,37 @@ private {
 
 void printHelpAndQuit(int status) {
 	Stdout(
-`xfBuild 0.3 :: Copyright (C) 2009 Team0xf
+`xfBuild 0.4 :: Copyright (C) 2009 Team0xf
 
 Usage:
-	xfbuild [-help|-clean]
-	xfbuild MODULE... [OPTION]... -- [COMPILER OPTION]...
+	xfbuild [--help]
+	xfbuild [ROOT | OPTION | COMPILER OPTION]...
+	
+	Track dependencies and their changes of one or more modules, compile them
+	with COMPILER OPTION(s) and link all objects into OUTPUT [see OPTION(s)].
 
-	Track dependencies and their changes of one or more MODULE(s),
-	compile them with COMPILER OPTION(s) and link all objects into OUTPUT.
+ROOT: 
+	String ended with either ".d" or "/" indicating a module
+	or a directory of modules to be compiled, respectively.
+	
+	OPTION(s) are prefixed by "+".
+	COMPILER OPTION(s) are anything that is not OPTION(s) or ROOT(s).
 
-Options:
-	-help        Show this help
-	-xPACKAGE    Don't compile any modules within the package
-	-full        Perform a full build
-	-clean       Remove object files
-	-redep       Remove the dependency file
-	-v           Print the compilation commands
-	-h           Manage headers for faster compilation
-	-profile     Dump profiling info at the end
-	-modLimitNUM Compile max NUM modules at a time
-	-DDEPS       Put the resulting dependencies into DEPS [default: .deps]
-	-OOBJS       Put compiled objects into OBJS [default: .objs]
-	-q           Use -oq when compiling (only supported by ldc)
-	-oOUTPUT     Link objects into the resulting binary OUTPUT
-	-cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]`);
-	version (MultiThreaded) Stdout(\n`	-threadsNUM  Number of theads to use [default: CPU core count]`);
+Recognized OPTION(s):
+	+xPACKAGE    Don't compile any modules within the package
+	+full        Perform a full build
+	+clean       Remove object files
+	+redep       Remove the dependency file
+	+v           Print the compilation commands
+	+h           Manage headers for faster compilation
+	+profile     Dump profiling info at the end
+	+modLimitNUM Compile max NUM modules at a time
+	+DDEPS       Put the resulting dependencies into DEPS [default: .deps]
+	+OOBJS       Put compiled objects into OBJS [default: .objs]
+	+q           Use -oq when compiling (only supported by ldc)
+	+oOUTPUT     Link objects into the resulting binary OUTPUT
+	+cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]`);
+	version (MultiThreaded) Stdout(\n`	+threadsNUM  Number of theads to use [default: CPU core count]`);
 	Stdout(`
 	
 Environment Variables:
@@ -66,7 +72,7 @@ Environment Variables:
 	exit(status);
 }
 
-int main(char[][] args) {
+int main(char[][] allArgs) {
 	char[][] envArgs;
 	
 	if (Environment.get("XFBUILDFLAGS")) {
@@ -79,46 +85,55 @@ int main(char[][] args) {
 
 	globalParams.compilerName = Environment.get("D_COMPILER", "dmd0xf");
 	
-	if (0 == envArgs.length && 1 == args.length) {
+	if (0 == envArgs.length && 1 == allArgs.length) {
 		// wrong invocation, return failure
 		printHelpAndQuit(1);
 	}
 	
+	if (2 == allArgs.length && "--help" == allArgs[1]) {
+		// standard help screen
+		printHelpAndQuit(0);
+	}
+	
 	bool profiling = false;
-
+	
+	char[][] args;
+	char[][] mainFiles;
+	
 	try {
 		profile!("main")({
-			foreach(i, arg; args)
+			foreach(arg; allArgs[1..$])
 			{
-				if(arg == "--")
-				{
-					globalParams.compilerOptions ~= args[i + 1 .. $];
-					args = args[0 .. i];
-					break;
+				if (0 == arg.length) continue;
+				
+				if ('-' == arg[0]) {
+					globalParams.compilerOptions ~= arg;
+				} else if ('+' == arg[0]) {
+					args ~= arg;
+				} else {
+					if (arg.length > 2 && (arg[$-2..$] == ".d" || arg[$-1] == '/')) {
+						if (Path.exists(arg)) {
+							if (Path.isFolder(arg)) {
+								foreach (child; Path.children(arg)) {
+									char[] childPath = Path.join(child.path, child.name);
+									if (!Path.isFolder(childPath) && childPath.length > 2 && childPath[$-2..$] == ".d") {
+										mainFiles ~= childPath;
+									}
+								}
+							} else {
+								mainFiles ~= arg;
+							}
+						} else {
+							throw new Exception("File not found: " ~ arg);
+						}
+					} else {
+						globalParams.compilerOptions ~= arg;
+					}
 				}
 			}
 			
-			char[][] mainFiles;
-			
 			auto parser = new ArgParser((char[] arg, uint) {
-				if (arg.length > 2 && (arg[$-2..$] == ".d" || arg[$-1] == '/')) {
-					if (Path.exists(arg)) {
-						if (Path.isFolder(arg)) {
-							foreach (child; Path.children(arg)) {
-								char[] childPath = Path.join(child.path, child.name);
-								if (!Path.isFolder(childPath) && childPath.length > 2 && childPath[$-2..$] == ".d") {
-									mainFiles ~= childPath;
-								}
-							}
-						} else {
-							mainFiles ~= arg;
-						}
-					} else {
-						throw new Exception("File not found: " ~ arg);
-					}
-				} else {
-					throw new Exception("unknown argument: " ~ arg);
-				}
+				throw new Exception("unknown argument: " ~ arg);
 			});
 			
 			globalParams.threadsToUse = CPUid.coresPerCPU;
@@ -127,96 +142,90 @@ int main(char[][] args) {
 			bool removeObjs = false;
 			bool removeDeps = false;
 			
-			parser.bind("-", "help",
-			{
-				// wanted invocation, return success
-				printHelpAndQuit(0);
-			});
-			
-			parser.bind("-", "full",
+			parser.bind("+", "full",
 			{
 				removeObjs = true;
 			});
 			
-			parser.bind("-", "clean",
+			parser.bind("+", "clean",
 			{
 				removeObjs = true;
 				quit = true;
 			});
 			
-			parser.bind("-", "c", (char[] arg)
+			parser.bind("+", "c", (char[] arg)
 			{
 				globalParams.compilerName = arg;
 			});
 
-			parser.bind("-", "O", (char[] arg)
+			parser.bind("+", "O", (char[] arg)
 			{
 				globalParams.objPath = arg;
 			});
 
-			parser.bind("-", "D", (char[] arg)
+			parser.bind("+", "D", (char[] arg)
 			{
 				globalParams.depsPath = arg;
 			});
 
-			parser.bind("-", "o", (char[] arg)
+			parser.bind("+", "o", (char[] arg)
 			{
 				globalParams.outputFile = arg;
 			});
 			
-			parser.bind("-", "x", (char[] arg)
+			parser.bind("+", "x", (char[] arg)
 			{
 				globalParams.ignore ~= arg;
 			});
 
-			parser.bind("-", "modLimit", (char[] arg)
+			parser.bind("+", "modLimit", (char[] arg)
 			{
 				globalParams.maxModulesToCompile = Integer.parse(arg);
 			});
 
-			parser.bind("-", "redep",
+			parser.bind("+", "redep",
 			{
 				removeDeps = true;
 			});
 			
-			parser.bind("-", "v",
+			parser.bind("+", "v",
 			{
 				globalParams.verbose = globalParams.printCommands = true;
 			});
 				
-			parser.bind("-", "profile",
+			parser.bind("+", "profile",
 			{
 				profiling = true;
 			});
 			
-			parser.bind("-", "h",
+			parser.bind("+", "h",
 			{
 				globalParams.manageHeaders = true;
 			});
 
-			parser.bind("-", "threads", (char[] arg)
+			parser.bind("+", "threads", (char[] arg)
 			{
 				globalParams.threadsToUse = Integer.parse(arg);
 			});
 
-			parser.bind("-", "q",
+			parser.bind("+", "q",
 			{
 				globalParams.useOQ = true;
 			});
 
-			parser.bind("-", "noop",
+			parser.bind("+", "noop",
 			{
 				globalParams.useOP = false;
 			});
 
-			parser.bind("-", "nolink",
+			parser.bind("+", "nolink",
 			{
 				globalParams.nolink = true;
 			});
 
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()
 			parser.parse(envArgs);
-			parser.parse(args[1..$]);
+			parser.parse(args);
 			
 			{
 				if (Path.exists(globalParams.projectFile) && Path.isFile(globalParams.projectFile)) {
@@ -252,7 +261,7 @@ int main(char[][] args) {
 					return;
 				
 				if(mainFiles is null)
-					throw new Exception("At least one MODULE needs to be specified, see -help");
+					throw new Exception("At least one MODULE needs to be specified, see +help");
 					
 				buildTask.execute();
 			}

@@ -9,7 +9,6 @@ Misc.d
 MT.d
 ../utils/Profiler.d
 ../utils/HardwareTimer.d
-../utils/perf.d
 ../utils/Memory.d
 ../utils/CPUid.d
 ../utils/Singleton.d

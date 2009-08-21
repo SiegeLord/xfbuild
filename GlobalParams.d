@@ -38,6 +38,9 @@ struct GlobalParams {
 	int maxModulesToCompile = int.max;
 	int threadsToUse = 1;
 	bool nolink = false;
+	
+	// it sometimes makes OPTLINK not crash... e.g. in Nucled
+	bool reverseModuleOrder = false;
 }
 
 

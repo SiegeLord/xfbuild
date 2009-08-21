@@ -56,7 +56,8 @@ Recognized OPTION(s):
 	+OOBJS       Put compiled objects into OBJS [default: .objs]
 	+q           Use -oq when compiling (only supported by ldc)
 	+oOUTPUT     Link objects into the resulting binary OUTPUT
-	+cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]`);
+	+cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]
+	+rmo         Reverse Module Order (when compiling - might uncrash OPTLINK)`);
 	version (MultiThreaded) Stdout(\n`	+threadsNUM  Number of theads to use [default: CPU core count]`);
 	Stdout(`
 	
@@ -221,6 +222,11 @@ int main(char[][] allArgs) {
 			parser.bind("+", "nolink",
 			{
 				globalParams.nolink = true;
+			});
+
+			parser.bind("+", "rmo",
+			{
+				globalParams.reverseModuleOrder = true;
 			});
 
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()

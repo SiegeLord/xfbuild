@@ -337,6 +337,10 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 	
 	bool firstPass = true;
 	while (compileArray) {
+		if (globalParams.reverseModuleOrder) {
+			compileArray.reverse;
+		}
+		
 		compileMore = null;
 		
 		Module[] compileNow = compileArray;

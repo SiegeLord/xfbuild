@@ -8,7 +8,9 @@ private {
 	import tango.io.device.File;
 	import tango.io.FilePath;
 	import tango.text.Util;
+	import tango.text.convert.Format;
 	import tango.stdc.stringz;
+	import tango.core.Thread;
 	extern (C) extern int system(char*);
 	
 	// TODO: better logging
@@ -68,7 +70,8 @@ void executeAndCheckFail(char[][] cmd)
 
 
 void executeCompilerViaResponseFile(char[] compiler, char[][] args) {
-	File.set("xfbuild.rsp", args.join("\n"));
-	executeAndCheckFail([compiler, "@xfbuild.rsp"]);
-	FilePath("xfbuild.rsp").remove();
+	char[] rspFile = Format("xfbuild.{:x}.rsp", cast(void*)Thread.getThis());
+	File.set(rspFile, args.join("\n"));
+	executeAndCheckFail([compiler, "@"~rspFile]);
+	FilePath(rspFile).remove();
 }

@@ -1,1 +1,1 @@
-dmd -g -I../.. -L-ltango-user-dmd -L-ltango-base-dmd -L-ldl -ofxfbuild @modList.lst
+dmd -g -I../.. -L-ltango-user-dmd -defaultlib=ltango-base-dmd -L-ldl -ofxfbuild @modList.lst

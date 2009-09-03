@@ -55,8 +55,10 @@ Recognized OPTION(s):
 	+DDEPS       Put the resulting dependencies into DEPS [default: .deps]
 	+OOBJS       Put compiled objects into OBJS [default: .objs]
 	+q           Use -oq when compiling (only supported by ldc)
+	+noop        Don't use -op when compiling
+	+nolink      Don't link
 	+oOUTPUT     Link objects into the resulting binary OUTPUT
-	+cCOMPILER   Use the D Compiler COMPILER [default: dmd0xf]
+	+cCOMPILER   Use the D Compiler COMPILER [default: dmd]
 	+rmo         Reverse Module Order (when compiling - might uncrash OPTLINK)`);
 	version (MultiThreaded) Stdout(\n`	+threadsNUM  Number of theads to use [default: CPU core count]`);
 	Stdout(`
@@ -65,7 +67,7 @@ Environment Variables:
 	XFBUILDFLAGS You can put any option from above into that variable
 	               Note: Keep in mind that command line options override
 	                     those
-	D_COMPILER   The D Compiler to use [default: dmd0xf]
+	D_COMPILER   The D Compiler to use [default: dmd]
 	               Note: XFBUILDFLAGS and command line options override
 	                     this
 `
@@ -84,7 +86,7 @@ int main(char[][] allArgs) {
 		}
 	}
 
-	globalParams.compilerName = Environment.get("D_COMPILER", "dmd0xf");
+	globalParams.compilerName = Environment.get("D_COMPILER", "dmd");
 	
 	if (0 == envArgs.length && 1 == allArgs.length) {
 		// wrong invocation, return failure

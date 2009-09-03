@@ -4,101 +4,104 @@
 
 module xf.build.MT;
 
-private {
-	import tango.core.Atomic;
-	import tango.stdc.stdlib : alloca, abort;
-	import tango.core.Thread;
-	import tango.util.log.Trace;
-}
 
-public {
-	import tango.core.ThreadPool;
-}
-
-alias ThreadPool!(void*) ThreadPoolT;
-
-
-
-
-struct MTFor
-{
-	ThreadPoolT threadPool;
-	int from, to;
-	int numPerTask;
-	
-	static MTFor opCall(ThreadPoolT threadPool, int from, int to, int numPerTask = 0)
-	{
-		assert(to >= from);
-	
-		MTFor result;
-		result.threadPool = threadPool;
-		result.from = from;
-		result.to = to;
-		
-		if(numPerTask == 0)
-		{
-			result.numPerTask = (to - from) / 4;
-			
-			if(result.numPerTask == 0) // (to - from) < 4
-				result.numPerTask = 1;
-		}
-		else
-			result.numPerTask = numPerTask;
-
-		return result;
+version (MultiThreaded) {
+	private {
+		import tango.core.Atomic;
+		import tango.stdc.stdlib : alloca, abort;
+		import tango.core.Thread;
+		import tango.util.log.Trace;
 	}
-	
-	int opApply(int delegate(ref int) dg)
+
+	public {
+		import tango.core.ThreadPool;
+	}
+
+	alias ThreadPool!(void*) ThreadPoolT;
+
+
+
+
+	struct MTFor
 	{
-		if(to == from)
-			return 0;
-	
-		assert(numPerTask > 0);
-	
-		Atomic!(int) numLeft;
-		int numTasks = (to - from) / numPerTask;
+		ThreadPoolT threadPool;
+		int from, to;
+		int numPerTask;
 		
-		assert(numTasks > 0);
-		numLeft.store(numTasks - 1);
-		
-		void run(int idx)
+		static MTFor opCall(ThreadPoolT threadPool, int from, int to, int numPerTask = 0)
 		{
-			int i, start;
-			i = start = idx * numPerTask;
+			assert(to >= from);
+		
+			MTFor result;
+			result.threadPool = threadPool;
+			result.from = from;
+			result.to = to;
 			
-			while(i < to && i - start < numPerTask)
+			if(numPerTask == 0)
 			{
-				dg(i);
-				++i;
+				result.numPerTask = (to - from) / 4;
+				
+				if(result.numPerTask == 0) // (to - from) < 4
+					result.numPerTask = 1;
 			}
-		}
-		
-		void task(void* arg)
-		{
-			try {
-				run(cast(int)arg);
-			} catch (Exception e) {
-				char[] error;
-				e.writeOut((char[] msg) { error ~= msg; });
-				Trace.formatln("{}", error);
-				abort();
-			}
-			numLeft.decrement();
-		}
-		
-		for(int i = 0; i < numTasks - 1; ++i)
-			threadPool.append(&task, cast(void*)i);
-		
-		run(numTasks - 1);
-		
-		while(numLeft.load() > 0)
-			{}
-			
-		return 0;
-	}
-}
+			else
+				result.numPerTask = numPerTask;
 
-MTFor mtFor(ThreadPoolT threadPool, int from, int to, int numPerTask = 0)
-{
-	return MTFor(threadPool, from, to, numPerTask);
+			return result;
+		}
+		
+		int opApply(int delegate(ref int) dg)
+		{
+			if(to == from)
+				return 0;
+		
+			assert(numPerTask > 0);
+		
+			Atomic!(int) numLeft;
+			int numTasks = (to - from) / numPerTask;
+			
+			assert(numTasks > 0);
+			numLeft.store(numTasks - 1);
+			
+			void run(int idx)
+			{
+				int i, start;
+				i = start = idx * numPerTask;
+				
+				while(i < to && i - start < numPerTask)
+				{
+					dg(i);
+					++i;
+				}
+			}
+			
+			void task(void* arg)
+			{
+				try {
+					run(cast(int)arg);
+				} catch (Exception e) {
+					char[] error;
+					e.writeOut((char[] msg) { error ~= msg; });
+					Trace.formatln("{}", error);
+					abort();
+				}
+				numLeft.decrement();
+			}
+			
+			for(int i = 0; i < numTasks - 1; ++i)
+				threadPool.append(&task, cast(void*)i);
+			
+			run(numTasks - 1);
+			
+			while(numLeft.load() > 0)
+				{}
+				
+			return 0;
+		}
+	}
+
+	MTFor mtFor(ThreadPoolT threadPool, int from, int to, int numPerTask = 0)
+	{
+		return MTFor(threadPool, from, to, numPerTask);
+	}
 }

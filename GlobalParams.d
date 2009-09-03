@@ -1,7 +1,10 @@
 module xf.build.GlobalParams;
 
 private {
-	import xf.build.MT : ThreadPoolT;
+	version (MultiThreaded) {
+		import xf.build.MT : ThreadPoolT;
+	}
+	
 	import tango.io.model.IFile;
 }
 
@@ -45,4 +48,7 @@ struct GlobalParams {
 
 
 GlobalParams	globalParams;
-ThreadPoolT		threadPool;
+
+version (MultiThreaded) {
+	ThreadPoolT		threadPool;
+}

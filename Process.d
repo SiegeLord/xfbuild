@@ -4,7 +4,13 @@ private {
 	import xf.build.GlobalParams;
 	import tango.sys.Process;
 	import Integer = tango.text.convert.Integer : toString;
-
+	
+	import tango.io.device.File;
+	import tango.io.FilePath;
+	import tango.text.Util;
+	import tango.stdc.stringz;
+	extern (C) extern int system(char*);
+	
 	// TODO: better logging
 	import tango.io.Stdout;
 }
@@ -15,7 +21,6 @@ class ProcessExecutionException : Exception {
 		super (msg);
 	}
 }
-
 
 
 void checkProcessFail(Process process)
@@ -41,11 +46,29 @@ void execute(Process process)
 		Stdout(process).newline;
 }
 
+
 void executeAndCheckFail(char[][] cmd)
 {
-	scope process = new Process(true, cmd);
+	char[] sys = cmd.join(" ");
+	char* csys = toStringz(sys);
+	int ret = system(csys);
+	
+	if (ret != 0) {
+		throw new ProcessExecutionException(`"` ~ sys ~ `" returned ` ~ Integer.toString(ret));
+	}
+	
+	/+scope process = new Process(true, cmd);
 	execute(process);
 	Stderr.copy(process.stdout).flush;
 	Stderr.copy(process.stderr).flush;
-	checkProcessFail(process);
+	checkProcessFail(process);+/
+	
+	
+}
+
+
+void executeCompilerViaResponseFile(char[] compiler, char[][] args) {
+	File.set("xfbuild.rsp", args.join("\n"));
+	executeAndCheckFail([compiler, "@xfbuild.rsp"]);
+	FilePath("xfbuild.rsp").remove();
 }

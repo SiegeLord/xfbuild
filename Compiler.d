@@ -5,7 +5,10 @@ private {
 	import xf.build.Module;
 	import xf.build.Process;
 	import xf.build.Misc;
-	import xf.build.MT;
+	
+	version (MultiThreaded) {
+		import xf.build.MT;
+	}
 
 	import xf.utils.Profiler;
 
@@ -186,7 +189,8 @@ void compile(
 		void delegate(char[]) stdout
 ) {
 	void execute(char[][] args) {
-		scope process = new Process(true, args);
+		executeCompilerViaResponseFile(args[0], args[1..$]);
+		/+scope process = new Process(true, args);
 		.execute(process);
 		foreach(line; new Lines!(char)(process.stdout)) {
 			stdout(TextUtil.trim(line));
@@ -194,7 +198,7 @@ void compile(
 
 		Stderr.copy(process.stderr).flush;
 		checkProcessFail(process);
-		//Stdout.formatln("process finished");
+		//Stdout.formatln("process finished");+/
 	}
 	
 	if(compileArray.length)

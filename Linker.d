@@ -55,7 +55,7 @@ bool link(ref Module[char[]] modules)
 	args ~= "-of" ~ globalParams.outputFile;
 	
 	if(!globalParams.recompileOnUndefinedReference)
-		executeAndCheckFail(args);
+		executeCompilerViaResponseFile(args[0], args[1..$]);
 	else
 	{
 		scope process = new Process(true, args);

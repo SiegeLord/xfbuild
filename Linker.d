@@ -10,6 +10,7 @@ private {
 	import tango.io.stream.Lines;
 	import tango.stdc.ctype : isalnum;
 	import tango.text.Util : contains;
+	import Array=tango.core.Array;
 
 	// TODO: better logging
 	import tango.io.Stdout;
@@ -36,17 +37,25 @@ bool isValidObjFileName(char[] f) {
 
 
 
-bool link(ref Module[char[]] modules)
+bool link(ref Module[char[]] modules,char[][] mainFiles=null)
 {
 	bool retryCompile;
 
 	char[][] args;
 	args ~= globalParams.compilerName;
 	args ~= globalParams.compilerOptions;
-	
-	foreach(m; modules)
+	foreach (k;mainFiles){
+		foreach(m; modules)
+		{
+			if(m.path==k){
+				if(! m.isHeader) args ~= m.objFile;
+				break;
+			}
+		}
+	}
+	foreach(k,m; modules)
 	{
-		if(m.isHeader)
+		if(m.isHeader || Array.contains(mainFiles,m.path))
 			continue;
 	
 		args ~= m.objFile;

@@ -77,7 +77,7 @@ scope class BuildTask {
 		}
 
 		return profile!("BuildTask.link")({
-			return .link(modules);
+			return .link(modules,mainFiles);
 		});
 	}
 	

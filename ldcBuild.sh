@@ -1,6 +1,6 @@
 #!/bin/bash
 
-xf=..
+xf=\.\.
 
 while [ $# -gt 0 ]
 do

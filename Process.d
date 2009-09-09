@@ -1,7 +1,7 @@
-module xf.build.Process;
+module xfbuild.Process;
 
 private {
-	import xf.build.GlobalParams;
+	import xfbuild.GlobalParams;
 	import tango.sys.Process;
 	import Integer = tango.text.convert.Integer : toString;
 	

@@ -2,7 +2,7 @@
 	Taken from Defend's engine.util.MT
 */
 
-module xf.build.MT;
+module xfbuild.MT;
 
 
 version (MultiThreaded) {

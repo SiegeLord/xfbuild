@@ -1,13 +1,13 @@
-module xf.build.Compiler;
+module xfbuild.Compiler;
 
 private {
-	import xf.build.GlobalParams;
-	import xf.build.Module;
-	import xf.build.Process;
-	import xf.build.Misc;
+	import xfbuild.GlobalParams;
+	import xfbuild.Module;
+	import xfbuild.Process;
+	import xfbuild.Misc;
 	
 	version (MultiThreaded) {
-		import xf.build.MT;
+		import xfbuild.MT;
 	}
 
 	import xf.utils.Profiler;

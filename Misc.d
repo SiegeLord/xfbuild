@@ -1,4 +1,4 @@
-module xf.build.Misc;
+module xfbuild.Misc;
 
 private {
 	import tango.text.Util;

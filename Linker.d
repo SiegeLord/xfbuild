@@ -1,10 +1,10 @@
-module xf.build.Linker;
+module xfbuild.Linker;
 
 private {
-	import xf.build.GlobalParams;
-	import xf.build.Module;
-	import xf.build.Process;
-	import xf.build.Misc;
+	import xfbuild.GlobalParams;
+	import xfbuild.Module;
+	import xfbuild.Process;
+	import xfbuild.Misc;
 
 	import tango.sys.Process;
 	import tango.io.stream.Lines;

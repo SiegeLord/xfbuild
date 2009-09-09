@@ -1,8 +1,8 @@
-module xf.build.GlobalParams;
+module xfbuild.GlobalParams;
 
 private {
 	version (MultiThreaded) {
-		import xf.build.MT : ThreadPoolT;
+		import xfbuild.MT : ThreadPoolT;
 	}
 	
 	import tango.io.model.IFile;

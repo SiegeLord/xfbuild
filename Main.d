@@ -1,11 +1,11 @@
-module xf.build.Main;
+module xfbuild.Main;
 
 private {
 	version(TraceExceptions) import tango.core.stacktrace.TraceExceptions;
 	
-	import xf.build.BuildTask;
-	import xf.build.Compiler : CompilerError;
-	import xf.build.GlobalParams;
+	import xfbuild.BuildTask;
+	import xfbuild.Compiler : CompilerError;
+	import xfbuild.GlobalParams;
 	import xf.utils.Profiler;
 
 	import tango.stdc.stdlib : exit;

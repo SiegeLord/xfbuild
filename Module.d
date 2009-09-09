@@ -1,8 +1,8 @@
-module xf.build.Module;
+module xfbuild.Module;
 
 private {
-	import xf.build.GlobalParams;
-	import xf.build.Misc;
+	import xfbuild.GlobalParams;
+	import xfbuild.Misc;
 	
 	import Path = tango.io.Path;
 	import tango.io.device.File;

@@ -1,11 +1,11 @@
-module xf.build.BuildTask;
+module xfbuild.BuildTask;
 
 private {
-	import xf.build.GlobalParams;
-	import xf.build.Module;
-	import xf.build.Compiler;
-	import xf.build.Linker;
-	import xf.build.Misc;
+	import xfbuild.GlobalParams;
+	import xfbuild.Module;
+	import xfbuild.Compiler;
+	import xfbuild.Linker;
+	import xfbuild.Misc;
 	
 	import xf.utils.Profiler;
 

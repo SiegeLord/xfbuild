@@ -66,11 +66,7 @@ class Module
 	
 	bool wasCompiled;
 	bool needRecompile;
-	
-	bool modified() { return timeModified > timeDep; }
-	
-	char[] toString() { return name; }
-	
+		
 	private char[] objFile_;
 	
 	char[] objFile()
@@ -85,6 +81,10 @@ class Module
 			~ globalParams.objExt;
 	}
 	
+	bool modified() { return timeModified > timeDep; }
+	
+	char[] toString() { return name; }
+
 	override hash_t toHash() {
 		return typeid(typeof(path)).getHash(cast(void*)&path);
 	}

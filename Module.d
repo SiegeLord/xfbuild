@@ -5,7 +5,9 @@ private {
 	import xfbuild.Misc;
 	
 	import Path = tango.io.Path;
-	import tango.io.device.File;
+	import tango.io.UnicodeFile;
+	import tango.text.convert.UnicodeBom;
+	import tango.text.Util;
 	import tango.io.stream.Lines;
 	import tango.text.Regex;
 	import tango.text.convert.Format;
@@ -51,7 +53,7 @@ class Module
 	char[] objFileInFolder()
 	{
 		auto dotPos = TextUtil.locatePrior(path, '.');
-		assert(dotPos != path.length);
+		assert(dotPos != path.length, name);
 		
 		return path[0 .. dotPos] ~ globalParams.objExt;
 	}
@@ -115,14 +117,15 @@ class Module
 	
 	
 	static Module fromFile(char[] path) {
+		path = path.dup;
+		
 		auto m = new Module;
 		m.path = path;
 		m.timeModified = Path.modified(m.path).ticks;
 
-		auto file = new File(m.path);
-		scope(exit) file.close();
-
-		foreach(line; new Lines!(char)(file))
+		auto fileData = (new UnicodeFile!(char)(m.path, Encoding.UTF_8)).read();
+		
+		foreach(line; splitLines(fileData))
 		{
 			line = TextUtil.trim(line);
 			

@@ -35,6 +35,7 @@ scope class BuildTask {
 	Module[char[]]	modules;
 	char[][]				mainFiles;
 	//Module[]			moduleStack;
+	bool					firstBuild = true;
 	
 	
 	this(char[][] mainFiles ...) {
@@ -65,7 +66,7 @@ scope class BuildTask {
 	void compile() {
 		profile!("BuildTask.compile")({
 			//if (moduleStack.length > 0) {
-				.compile(modules);
+				.compile(this.firstBuild, modules);
 			//}
 		});
 	}
@@ -84,6 +85,8 @@ scope class BuildTask {
 
 	private void readDeps() {
 		if (Path.exists(globalParams.depsPath)) {
+			this.firstBuild = false;
+			
 			auto file = new FileMap(globalParams.depsPath);
 			scope(exit) file.close();
 			
@@ -154,13 +157,15 @@ scope class BuildTask {
 					m.needRecompile = true;
 					//moduleStack ~= m;
 				}
-				else if(!Path.exists(m.objFile))
-				{
-					if(globalParams.verbose)
-						Stdout.formatln("{}'s obj file was removed", m.name);
-					
-					m.needRecompile = true;
-					//moduleStack ~= m;
+				else if (globalParams.compilerName != "increBuild") {
+					if(!Path.exists(m.objFile))
+					{
+						if(globalParams.verbose)
+							Stdout.formatln("{}'s obj file was removed", m.name);
+						
+						m.needRecompile = true;
+						//moduleStack ~= m;
+					}
 				}
 				
 				if (deps) foreach(dep; TextUtil.patterns(deps, ","))

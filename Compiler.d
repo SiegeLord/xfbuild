@@ -71,7 +71,7 @@ private char[] unescapePath(char[] path) {
 }
 
 
-void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref Module[] compileMore)
+void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref Module[] compileMore, bool firstBuild)
 {
 	Module getModule(char[] name, char[] path, bool* newlyEncountered = null) {
 		Module worker() {
@@ -111,10 +111,17 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 			opts ~= "-H";
 		}
 		
+		if (firstBuild) {
+			opts ~= "-o-";
+			opts ~= "-c";
+		}
+		
 		compile(opts ~ ["-deps="~depsFileName], compileArray, (char[] line) {
 			if(!isVerboseMsg(line) && TextUtil.trim(line).length)
 				Stderr(line).newline;
-		});
+		},
+			!firstBuild && globalParams.compilerName != "increBuild" // ==moveObjects?
+		);
 	} catch (ProcessExecutionException e) {
 		throw new CompilerError(e.msg);
 	}
@@ -186,7 +193,8 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 void compile(
 		char[][] extraArgs,
 		Module[] compileArray,
-		void delegate(char[]) stdout
+		void delegate(char[]) stdout,
+		bool moveObjects
 ) {
 	void execute(char[][] args) {
 		executeCompilerViaResponseFile(args[0], args[1..$]);
@@ -219,8 +227,10 @@ void compile(
 
 				execute(args);
 
-				foreach(m; group)
-					Path.rename(m.lastName ~ globalParams.objExt, m.objFile);
+				if (moveObjects) {
+					foreach(m; group)
+						Path.rename(m.lastName ~ globalParams.objExt, m.objFile);
+				}
 			}
 
 			int[char[]] lastNames;
@@ -253,13 +263,17 @@ void compile(
 			char[][] args;
 			args ~= globalParams.compilerName;
 			args ~= globalParams.compilerOptions;
-			args ~= "-c";
-			if (!globalParams.useOQ) {
-				args ~= "-op";
-			} else {
-				args ~= "-oq";
-				args ~= "-od" ~ globalParams.objPath;
+			
+			if (globalParams.compilerName != "increBuild") {
+				args ~= "-c";
+				if (!globalParams.useOQ) {
+					args ~= "-op";
+				} else {
+					args ~= "-oq";
+					args ~= "-od" ~ globalParams.objPath;
+				}
 			}
+			
 			args ~= extraArgs;
 
 			foreach(m; compileArray)
@@ -269,9 +283,12 @@ void compile(
 			
 			execute(args);
 			
-			if (!globalParams.useOQ) {
-				foreach(m; compiled)
-					Path.rename(m.objFileInFolder, m.objFile);
+
+			if (moveObjects) {
+				if (!globalParams.useOQ) {
+					foreach(m; compiled)
+						Path.rename(m.objFileInFolder, m.objFile);
+				}
 			}
 		}
 	}
@@ -281,7 +298,7 @@ void compile(
 import tango.util.container.HashSet;
 
 
-void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
+void compile(bool firstBuild, ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 {
 	/+if (globalParams.verbose) {
 		Stdout.formatln("compile called with: {}", moduleStack);
@@ -366,7 +383,7 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 					Trace.formatln("Thread {}: compiling {} modules", th, mods.length);
 					
 					if (mods.length > 0) {
-						compileAndTrackDeps(mods, modules, threadLater[th]);
+						compileAndTrackDeps(mods, modules, threadLater[th], firstBuild);
 					}
 				}
 				
@@ -374,8 +391,10 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 					compileLater ~= later;
 				}
 			} else {
-				compileAndTrackDeps(compileNow, modules, compileLater);
+				compileAndTrackDeps(compileNow, modules, compileLater, firstBuild);
 			}
+			
+			firstBuild = false;
 		});
 		
 		//Stdout.formatln("compileMore: {}", compileMore);

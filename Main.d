@@ -235,6 +235,11 @@ int main(char[][] allArgs) {
 			parser.parse(envArgs);
 			parser.parse(args);
 			
+			if ("increBuild" == globalParams.compilerName) {
+				globalParams.useOP = true;
+				globalParams.nolink = true;
+			}
+			
 			{
 				if (Path.exists(globalParams.projectFile) && Path.isFile(globalParams.projectFile)) {
 					scope json = new Json!(char);

@@ -405,7 +405,7 @@ void compile(bool firstBuild, ref Module[char[]] modules/+, ref Module[] moduleS
 			In the second pass, the modules from the first one will be compiled anyway
 			we'll pass them again to the compiler so it has a chance of better symbol placement
 		*/
-		if (firstPass && next.length > 0) {
+		if (firstPass/+ && next.length > 0+/) {
 			compileArray ~= next;
 		} else {
 			compileArray = next;

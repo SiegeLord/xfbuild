@@ -71,7 +71,7 @@ private char[] unescapePath(char[] path) {
 }
 
 
-void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref Module[] compileMore, bool firstBuild)
+void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref Module[] compileMore)
 {
 	Module getModule(char[] name, char[] path, bool* newlyEncountered = null) {
 		Module worker() {
@@ -111,16 +111,11 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 			opts ~= "-H";
 		}
 		
-		if (firstBuild) {
-			opts ~= "-o-";
-			opts ~= "-c";
-		}
-		
 		compile(opts ~ ["-deps="~depsFileName], compileArray, (char[] line) {
 			if(!isVerboseMsg(line) && TextUtil.trim(line).length)
 				Stderr(line).newline;
 		},
-			!firstBuild && globalParams.compilerName != "increBuild" // ==moveObjects?
+			globalParams.compilerName != "increBuild" // ==moveObjects?
 		);
 	} catch (ProcessExecutionException e) {
 		throw new CompilerError(e.msg);
@@ -298,10 +293,10 @@ void compile(
 import tango.util.container.HashSet;
 
 
-void compile(bool firstBuild, ref Module[char[]] modules/+, ref Module[] moduleStack+/)
+void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 {
 	/+if (globalParams.verbose) {
-		Stdout.formatln("compile called with: {}", moduleStack);
+		Stdout.formatln("compile called with: {}", modules.keys);
 	}+/
 	
 	Module[] compileArray;
@@ -383,7 +378,7 @@ void compile(bool firstBuild, ref Module[char[]] modules/+, ref Module[] moduleS
 					Trace.formatln("Thread {}: compiling {} modules", th, mods.length);
 					
 					if (mods.length > 0) {
-						compileAndTrackDeps(mods, modules, threadLater[th], firstBuild);
+						compileAndTrackDeps(mods, modules, threadLater[th]);
 					}
 				}
 				
@@ -391,10 +386,8 @@ void compile(bool firstBuild, ref Module[char[]] modules/+, ref Module[] moduleS
 					compileLater ~= later;
 				}
 			} else {
-				compileAndTrackDeps(compileNow, modules, compileLater, firstBuild);
+				compileAndTrackDeps(compileNow, modules, compileLater);
 			}
-			
-			firstBuild = false;
 		});
 		
 		//Stdout.formatln("compileMore: {}", compileMore);
@@ -405,7 +398,7 @@ void compile(bool firstBuild, ref Module[char[]] modules/+, ref Module[] moduleS
 			In the second pass, the modules from the first one will be compiled anyway
 			we'll pass them again to the compiler so it has a chance of better symbol placement
 		*/
-		if (firstPass && (firstBuild || next.length > 0)) {
+		if (firstPass && next.length > 0) {
 			compileArray ~= next;
 		} else {
 			compileArray = next;

@@ -35,7 +35,6 @@ scope class BuildTask {
 	Module[char[]]	modules;
 	char[][]				mainFiles;
 	//Module[]			moduleStack;
-	bool					firstBuild = true;
 	
 	
 	this(char[][] mainFiles ...) {
@@ -66,7 +65,7 @@ scope class BuildTask {
 	void compile() {
 		profile!("BuildTask.compile")({
 			//if (moduleStack.length > 0) {
-				.compile(this.firstBuild, modules);
+				.compile(modules);
 			//}
 		});
 	}
@@ -85,8 +84,6 @@ scope class BuildTask {
 
 	private void readDeps() {
 		if (Path.exists(globalParams.depsPath)) {
-			this.firstBuild = false;
-			
 			auto file = new FileMap(globalParams.depsPath);
 			scope(exit) file.close();
 			

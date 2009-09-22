@@ -71,7 +71,11 @@ void executeAndCheckFail(char[][] cmd)
 
 void executeCompilerViaResponseFile(char[] compiler, char[][] args) {
 	char[] rspFile = Format("xfbuild.{:x}.rsp", cast(void*)Thread.getThis());
-	File.set(rspFile, args.join("\n"));
+	char[] rspData = args.join("\n");
+	/+if (globalParams.verbose) {
+		Stdout.formatln("running the compiler with:\n{}", rspData);
+	}+/
+	File.set(rspFile, rspData);
 	executeAndCheckFail([compiler, "@"~rspFile]);
 	FilePath(rspFile).remove();
 }

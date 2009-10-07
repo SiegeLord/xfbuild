@@ -44,6 +44,9 @@ struct GlobalParams {
 	
 	// it sometimes makes OPTLINK not crash... e.g. in Nucled
 	bool reverseModuleOrder = false;
+
+	bool recursiveModuleScan = false;
+	bool useDeps = true;
 }
 
 

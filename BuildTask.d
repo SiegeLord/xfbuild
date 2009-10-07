@@ -33,8 +33,8 @@ static this() {
 
 scope class BuildTask {
 	Module[char[]]	modules;
-	char[][]				mainFiles;
-	//Module[]			moduleStack;
+	char[][]	mainFiles;
+	//Module[]	moduleStack;
 	
 	
 	this(char[][] mainFiles ...) {
@@ -83,7 +83,7 @@ scope class BuildTask {
 	
 
 	private void readDeps() {
-		if (Path.exists(globalParams.depsPath)) {
+		if (globalParams.useDeps && Path.exists(globalParams.depsPath)) {
 			auto file = new FileMap(globalParams.depsPath);
 			scope(exit) file.close();
 			

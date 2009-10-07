@@ -8,12 +8,14 @@ private {
 	import xfbuild.GlobalParams;
 	import xf.utils.Profiler;
 
+	import tango.core.Version;
 	import tango.stdc.stdlib : exit;
 	import tango.sys.Environment : Environment;
 	import Integer = tango.text.convert.Integer;
 	import tango.text.Util : split;
 	import tango.util.ArgParser;
 	import tango.text.json.Json;
+	import tango.io.FilePath;
 	import tango.io.device.File;
 	import Path = tango.io.Path;
 	
@@ -59,7 +61,9 @@ Recognized OPTION(s):
 	+nolink      Don't link
 	+oOUTPUT     Link objects into the resulting binary OUTPUT
 	+cCOMPILER   Use the D Compiler COMPILER [default: dmd]
-	+rmo         Reverse Module Order (when compiling - might uncrash OPTLINK)`);
+	+rmo         Reverse Module Order (when compiling - might uncrash OPTLINK)
+	+R           Recursively scan directories for modules
+	+nodeps      Do not use dependencies' file`);
 	version (MultiThreaded) Stdout(\n`	+threadsNUM  Number of theads to use [default: CPU core count]`);
 	Stdout(`
 	
@@ -72,6 +76,10 @@ Environment Variables:
 	                     this
 `
 	).flush;
+
+	debug Stdout.formatln( "\nBuilt with {} v{} and Tango v{}.{} at {} {}\n",
+		__VENDOR__, __VERSION__, Tango.Major, Tango.Minor, __DATE__, __TIME__ );
+
 	exit(status);
 }
 
@@ -105,6 +113,8 @@ int main(char[][] allArgs) {
 	
 	try {
 		profile!("main")({
+			FilePath[] dirsAndModules;
+
 			foreach(arg; allArgs[1..$])
 			{
 				if (0 == arg.length) continue;
@@ -114,21 +124,9 @@ int main(char[][] allArgs) {
 				} else if ('+' == arg[0]) {
 					args ~= arg;
 				} else {
-					if (arg.length > 2 && (arg[$-2..$] == ".d" || arg[$-1] == '/')) {
-						if (Path.exists(arg)) {
-							if (Path.isFolder(arg)) {
-								foreach (child; Path.children(arg)) {
-									char[] childPath = Path.join(child.path, child.name);
-									if (!Path.isFolder(childPath) && childPath.length > 2 && childPath[$-2..$] == ".d") {
-										mainFiles ~= childPath;
-									}
-								}
-							} else {
-								mainFiles ~= arg;
-							}
-						} else {
-							throw new Exception("File not found: " ~ arg);
-						}
+					if ((arg == "." || arg == "./" || arg == "/" || arg.length > 2)
+						&& (arg[$-2..$] == ".d" || arg[$-1] == '/')) {
+							dirsAndModules ~= FilePath(arg);
 					} else {
 						globalParams.compilerOptions ~= arg;
 					}
@@ -141,100 +139,60 @@ int main(char[][] allArgs) {
 			
 			globalParams.threadsToUse = CPUid.coresPerCPU;
 			
-			bool quit = false;
-			bool removeObjs = false;
-			bool removeDeps = false;
+			bool quit	= false;
+			bool removeObjs	= false;
+			bool removeDeps	= false;
 			
 			parser.bind("+", "full",
 			{
 				removeObjs = true;
 			});
 			
-			parser.bind("+", "clean",
-			{
-				removeObjs = true;
-				quit = true;
-			});
-			
-			parser.bind("+", "c", (char[] arg)
-			{
-				globalParams.compilerName = arg;
-			});
-
-			parser.bind("+", "O", (char[] arg)
-			{
-				globalParams.objPath = arg;
-			});
-
-			parser.bind("+", "D", (char[] arg)
-			{
-				globalParams.depsPath = arg;
-			});
-
-			parser.bind("+", "o", (char[] arg)
-			{
-				globalParams.outputFile = arg;
-			});
-			
-			parser.bind("+", "x", (char[] arg)
-			{
-				globalParams.ignore ~= arg;
-			});
-
-			parser.bind("+", "modLimit", (char[] arg)
-			{
-				globalParams.maxModulesToCompile = Integer.parse(arg);
-			});
-
-			parser.bind("+", "redep",
-			{
-				removeDeps = true;
-			});
-			
-			parser.bind("+", "v",
-			{
-				globalParams.verbose = globalParams.printCommands = true;
-			});
-				
-			parser.bind("+", "profile",
-			{
-				profiling = true;
-			});
-			
-			parser.bind("+", "h",
-			{
-				globalParams.manageHeaders = true;
-			});
-
-			parser.bind("+", "threads", (char[] arg)
-			{
-				globalParams.threadsToUse = Integer.parse(arg);
-			});
-
-			parser.bind("+", "q",
-			{
-				globalParams.useOQ = true;
-			});
-
-			parser.bind("+", "noop",
-			{
-				globalParams.useOP = false;
-			});
-
-			parser.bind("+", "nolink",
-			{
-				globalParams.nolink = true;
-			});
-
-			parser.bind("+", "rmo",
-			{
-				globalParams.reverseModuleOrder = true;
-			});
+			parser.bind("+", "clean",			{ removeObjs = true; quit = true; });
+			parser.bind("+", "c",		(char[] arg)	{ globalParams.compilerName = arg; });
+			parser.bind("+", "O",		(char[] arg)	{ globalParams.objPath = arg; });
+			parser.bind("+", "D",		(char[] arg)	{ globalParams.depsPath = arg; });
+			parser.bind("+", "o",		(char[] arg)	{ globalParams.outputFile = arg; });
+			parser.bind("+", "x",		(char[] arg)	{ globalParams.ignore ~= arg; });
+			parser.bind("+", "modLimit",	(char[] arg)	{ globalParams.maxModulesToCompile = Integer.parse(arg); });
+			parser.bind("+", "redep",			{ removeDeps = true; });
+			parser.bind("+", "v",				{ globalParams.verbose = globalParams.printCommands = true; });
+			parser.bind("+", "profile",			{ profiling = true; });
+			parser.bind("+", "h",				{ globalParams.manageHeaders = true; });
+			parser.bind("+", "threads",	(char[] arg)	{ globalParams.threadsToUse = Integer.parse(arg); });
+			parser.bind("+", "q",				{ globalParams.useOQ = true; });
+			parser.bind("+", "noop",			{ globalParams.useOP = false; });
+			parser.bind("+", "nolink",			{ globalParams.nolink = true; });
+			parser.bind("+", "rmo",				{ globalParams.reverseModuleOrder = true; });
+			parser.bind("+", "R",				{ globalParams.recursiveModuleScan = true; });
+			parser.bind("+", "nodeps",			{ globalParams.useDeps = false; });
 
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()
 			parser.parse(envArgs);
 			parser.parse(args);
-			
+
+			        //------------------------------------------------------------
+                                void _ScanForModules (FilePath[] paths, ref char[][] modules, bool recursive = false)
+                                {
+                                        foreach (child; paths)
+                                                if (child.exists())
+                                                        if (!child.isFolder())
+                                                        {
+                                                                char[] filename = child.file();
+
+                                                                if (filename.length > 2 && filename[$-2..$] == ".d")
+                                                                        modules ~= child.toString().dup;
+                                                        }
+                                                        else
+                                                                if (recursive)
+                                                                        _ScanForModules (child.toList(), modules, true);
+                                                else
+                                                        throw new Exception("File not found: " ~ child.toString());
+                                }
+                                //-----------------------------------------------------------
+
+                        _ScanForModules (dirsAndModules, mainFiles, globalParams.recursiveModuleScan);
+
 			if ("increBuild" == globalParams.compilerName) {
 				globalParams.useOP = true;
 				globalParams.nolink = true;

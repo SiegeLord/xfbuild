@@ -9,6 +9,7 @@ private {
 	import xf.utils.Profiler;
 
 	import tango.core.Version;
+	import tango.core.ThreadPool;
 	import tango.stdc.stdlib : exit;
 	import tango.sys.Environment : Environment;
 	import Integer = tango.text.convert.Integer;
@@ -213,7 +214,7 @@ int main(char[][] allArgs) {
 			}
 			
 			version (MultiThreaded) {
-				.threadPool = new ThreadPoolT(globalParams.threadsToUse);
+				.threadPool = new ThreadPool!(void*)(globalParams.threadsToUse);
 			}
 				
 			{

@@ -104,14 +104,20 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 	}
 	
 	
-	final depsFileName = compileArray[0].name~".moduleDeps";
+	char[][] opts;
+	
+	if (globalParams.manageHeaders)
+		opts ~= "-H";
+
+	char[] depsFileName;
+
+	if (globalParams.useDeps) {
+		depsFileName = compileArray[0].name ~ ".moduleDeps";
+		opts ~= ["-deps=" ~ depsFileName];
+	}
+
 	try {
-		char[][] opts;
-		if (globalParams.manageHeaders) {
-			opts ~= "-H";
-		}
-		
-		compile(opts ~ ["-deps="~depsFileName], compileArray, (char[] line) {
+		compile (opts, compileArray, (char[] line) {
 			if(!isVerboseMsg(line) && TextUtil.trim(line).length)
 				Stderr(line).newline;
 		},
@@ -126,40 +132,43 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 	foreach (mod; compileArray) {
 		mod.deps = null;
 	}
-	
-	scope depsFile = new FileMap(depsFileName);
-	scope(exit) {
-		depsFile.close();
-		Path.remove(depsFileName);
-	}
 
-	//profile!("deps parsing")({
-		foreach (line; new Lines!(char)(depsFile)) {
-			auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` : `, null, ` (`, null, `)`, null);
-			if (arr !is null) {
-				char[] modName = arr[0].dup;
-				char[] modPath = unescapePath(arr[1].dup);
+	if (globalParams.useDeps) {
+		scope depsFile = new FileMap(depsFileName);
+		
+		scope(exit) {
+			depsFile.close();
+			Path.remove(depsFileName);
+		}
 
-				//char[] prot = arr[2];
-				
-				if (!isIgnored(modName)) {
-					assert (modPath.length > 0);
-					Module m = getModule(modName, modPath);
+		//profile!("deps parsing")({
+			foreach (line; new Lines!(char)(depsFile)) {
+				auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` : `, null, ` (`, null, `)`, null);
+				if (arr !is null) {
+					char[] modName = arr[0].dup;
+					char[] modPath = unescapePath(arr[1].dup);
 
-					char[] depName = arr[3].dup;
-					char[] depPath = unescapePath(arr[4].dup);
+					//char[] prot = arr[2];
+
+					if (!isIgnored(modName)) {
+						assert (modPath.length > 0);
+						Module m = getModule(modName, modPath);
+
+						char[] depName = arr[3].dup;
+						char[] depPath = unescapePath(arr[4].dup);
 					
-					if (depName != "object" && !isIgnored(depName)) {
-						assert (depPath.length > 0);
+						if (depName != "object" && !isIgnored(depName)) {
+							assert (depPath.length > 0);
 						
-						Module depMod = getModule(depName, depPath);
-						//Stdout.formatln("Module {} depends on {}", m.name, depMod.name);
-						m.addDep(depMod);
+							Module depMod = getModule(depName, depPath);
+							//Stdout.formatln("Module {} depends on {}", m.name, depMod.name);
+							m.addDep(depMod);
+						}
 					}
 				}
 			}
-		}
-	//});
+		//});
+	}
 	
 	foreach (mod; compileArray) {
 		mod.timeDep = mod.timeModified;

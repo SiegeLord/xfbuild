@@ -2,14 +2,14 @@ module xfbuild.Main;
 
 private {
 	version(TraceExceptions) import tango.core.stacktrace.TraceExceptions;
-	
+
+	import xfbuild.MT;
 	import xfbuild.BuildTask;
 	import xfbuild.Compiler : CompilerError;
 	import xfbuild.GlobalParams;
 	import xf.utils.Profiler;
 
 	import tango.core.Version;
-	import tango.core.ThreadPool;
 	import tango.stdc.stdlib : exit;
 	import tango.sys.Environment : Environment;
 	import Integer = tango.text.convert.Integer;
@@ -214,7 +214,7 @@ int main(char[][] allArgs) {
 			}
 			
 			version (MultiThreaded) {
-				.threadPool = new ThreadPool!(void*)(globalParams.threadsToUse);
+				.threadPool = new ThreadPoolT(globalParams.threadsToUse);
 			}
 				
 			{

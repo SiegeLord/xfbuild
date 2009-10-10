@@ -62,6 +62,7 @@ Recognized OPTION(s):
 	+nolink      Don't link
 	+oOUTPUT     Link objects into the resulting binary OUTPUT
 	+cCOMPILER   Use the D Compiler COMPILER [default: dmd]
+	+CEXT        Extension of the compiler-generated object files [default: .obj on Windows, .o otherwise]
 	+rmo         Reverse Module Order (when compiling - might uncrash OPTLINK)
 	+R           Recursively scan directories for modules
 	+nodeps      Do not use dependencies' file`);
@@ -151,6 +152,7 @@ int main(char[][] allArgs) {
 			
 			parser.bind("+", "clean",			{ removeObjs = true; quit = true; });
 			parser.bind("+", "c",		(char[] arg)	{ globalParams.compilerName = arg; });
+			parser.bind("+", "C",		(char[] arg)	{ globalParams.objExt = arg; });		// HACK: should use profiles/configs instead
 			parser.bind("+", "O",		(char[] arg)	{ globalParams.objPath = arg; });
 			parser.bind("+", "D",		(char[] arg)	{ globalParams.depsPath = arg; });
 			parser.bind("+", "o",		(char[] arg)	{ globalParams.outputFile = arg; });

@@ -175,7 +175,7 @@ int main(char[][] allArgs) {
 			parser.parse(args);
 
 			        //------------------------------------------------------------
-                    void _ScanForModules (FilePath[] paths, ref char[][] modules, bool recursive = false) {
+                    void _ScanForModules (FilePath[] paths, ref char[][] modules, bool recursive = false, bool justCheckAFolder = false) {
                             foreach (child; paths) {
                                     if (child.exists()) {
                                             if (!child.isFolder()) {
@@ -187,6 +187,10 @@ int main(char[][] allArgs) {
                                             } else {
                                                     if (recursive) {
                                                             _ScanForModules (child.toList(), modules, true);
+                                                    } else {
+                                                            if( !justCheckAFolder ) {
+                                                                    _ScanForModules (child.toList(), modules, false, true);
+                                                            }
                                                     }
                                             }
                                     } else {

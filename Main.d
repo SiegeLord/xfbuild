@@ -175,26 +175,28 @@ int main(char[][] allArgs) {
 			parser.parse(args);
 
 			        //------------------------------------------------------------
-                                void _ScanForModules (FilePath[] paths, ref char[][] modules, bool recursive = false)
-                                {
-                                        foreach (child; paths)
-                                                if (child.exists())
-                                                        if (!child.isFolder())
-                                                        {
-                                                                char[] filename = child.file();
+                    void _ScanForModules (FilePath[] paths, ref char[][] modules, bool recursive = false) {
+                            foreach (child; paths) {
+                                    if (child.exists()) {
+                                            if (!child.isFolder()) {
+                                                    char[] filename = child.file();
 
-                                                                if (filename.length > 2 && filename[$-2..$] == ".d")
-                                                                        modules ~= child.toString().dup;
-                                                        }
-                                                        else
-                                                                if (recursive)
-                                                                        _ScanForModules (child.toList(), modules, true);
-                                                else
-                                                        throw new Exception("File not found: " ~ child.toString());
-                                }
-                                //-----------------------------------------------------------
+                                                    if (filename.length > 2 && filename[$-2..$] == ".d") {
+                                                            modules ~= child.toString().dup;
+                                                    }
+                                            } else {
+                                                    if (recursive) {
+                                                            _ScanForModules (child.toList(), modules, true);
+                                                    }
+                                            }
+                                    } else {
+                                            throw new Exception("File not found: " ~ child.toString());
+                                    }
+                            }
+                    }
+                    //-----------------------------------------------------------
 
-                        _ScanForModules (dirsAndModules, mainFiles, globalParams.recursiveModuleScan);
+            _ScanForModules (dirsAndModules, mainFiles, globalParams.recursiveModuleScan);
 
 			if ("increBuild" == globalParams.compilerName) {
 				globalParams.useOP = true;

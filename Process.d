@@ -76,6 +76,16 @@ void executeCompilerViaResponseFile(char[] compiler, char[][] args) {
 		Stdout.formatln("running the compiler with:\n{}", rspData);
 	}+/
 	File.set(rspFile, rspData);
+	
+	scope (failure) {
+		if (globalParams.removeRspOnFail) {
+			FilePath(rspFile).remove();
+		}
+	}
+	
+	scope (success) {
+		FilePath(rspFile).remove();
+	}
+	
 	executeAndCheckFail([compiler, "@"~rspFile]);
-	FilePath(rspFile).remove();
 }

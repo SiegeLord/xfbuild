@@ -65,7 +65,8 @@ Recognized OPTION(s):
 	+CEXT        Extension of the compiler-generated object files [default: .obj on Windows, .o otherwise]
 	+rmo         Reverse Module Order (when compiling - might uncrash OPTLINK)
 	+R           Recursively scan directories for modules
-	+nodeps      Do not use dependencies' file`);
+	+nodeps      Don't use dependencies' file
+	+keeprsp     Don't remove .rsp files upon errors`);
 	version (MultiThreaded) Stdout(\n`	+threadsNUM  Number of theads to use [default: CPU core count]`);
 	Stdout(`
 	
@@ -169,6 +170,7 @@ int main(char[][] allArgs) {
 			parser.bind("+", "rmo",				{ globalParams.reverseModuleOrder = true; });
 			parser.bind("+", "R",				{ globalParams.recursiveModuleScan = true; });
 			parser.bind("+", "nodeps",			{ globalParams.useDeps = false; });
+			parser.bind("+", "keeprsp",			{ globalParams.removeRspOnFail = false; });
 
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()
 			parser.parse(envArgs);

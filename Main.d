@@ -1,7 +1,7 @@
 module xfbuild.Main;
 
 private {
-	version(TraceExceptions) import tango.core.stacktrace.TraceExceptions;
+	version(TraceExceptions) import tango.core.tools.TraceExceptions;
 
 	import xfbuild.MT;
 	import xfbuild.BuildTask;
@@ -14,7 +14,6 @@ private {
 	import tango.sys.Environment : Environment;
 	import Integer = tango.text.convert.Integer;
 	import tango.text.Util : split;
-	import tango.util.ArgParser;
 	import tango.text.json.Json;
 	import tango.io.FilePath;
 	import tango.io.device.File;
@@ -86,6 +85,45 @@ Environment Variables:
 	exit(status);
 }
 
+
+// the olde arg parser in Tango got deprecated and the new one is too
+// fancy for our purposes so here's a quickly whipped up one :P
+struct ArgParser {
+	void delegate(char[]) err;
+	struct Reg {
+		char[] t;
+		void delegate() a;
+		void delegate(char[]) b;
+		bool isa;
+	}
+	Reg[] reg;
+	void bind(char[] t, void delegate() a) {
+		reg ~= Reg(t.dup, a, null, true);
+	}
+	void bind(char[] t, void delegate(char[]) b) {
+		reg ~= Reg(t.dup, null, b, false);
+	}
+	void parse(char[][] args) {
+		argIter: foreach (arg; args) {
+			if (0 == arg.length) continue;
+			if (arg[0] != '+') {
+				err(arg);
+				continue;
+			}
+			arg = arg[1..$];
+			foreach (r; reg) {
+				if (r.t.length <= arg.length && r.t == arg[0..r.t.length]) {
+					if (r.isa) r.a();
+					else r.b(arg[r.t.length..$]);
+					continue argIter;
+				}
+			}
+			err(arg);
+		}
+	}
+}
+
+
 int main(char[][] allArgs) {
 	char[][] envArgs;
 	
@@ -136,7 +174,7 @@ int main(char[][] allArgs) {
 				}
 			}
 			
-			auto parser = new ArgParser((char[] arg, uint) {
+			auto parser = ArgParser((char[] arg) {
 				throw new Exception("unknown argument: " ~ arg);
 			});
 			
@@ -146,31 +184,27 @@ int main(char[][] allArgs) {
 			bool removeObjs	= false;
 			bool removeDeps	= false;
 			
-			parser.bind("+", "full",
-			{
-				removeObjs = true;
-			});
-			
-			parser.bind("+", "clean",			{ removeObjs = true; quit = true; });
-			parser.bind("+", "c",		(char[] arg)	{ globalParams.compilerName = arg; });
-			parser.bind("+", "C",		(char[] arg)	{ globalParams.objExt = arg; });		// HACK: should use profiles/configs instead
-			parser.bind("+", "O",		(char[] arg)	{ globalParams.objPath = arg; });
-			parser.bind("+", "D",		(char[] arg)	{ globalParams.depsPath = arg; });
-			parser.bind("+", "o",		(char[] arg)	{ globalParams.outputFile = arg; });
-			parser.bind("+", "x",		(char[] arg)	{ globalParams.ignore ~= arg; });
-			parser.bind("+", "modLimit",	(char[] arg)	{ globalParams.maxModulesToCompile = Integer.parse(arg); });
-			parser.bind("+", "redep",			{ removeDeps = true; });
-			parser.bind("+", "v",				{ globalParams.verbose = globalParams.printCommands = true; });
-			parser.bind("+", "profile",			{ profiling = true; });
-			parser.bind("+", "h",				{ globalParams.manageHeaders = true; });
-			parser.bind("+", "threads",	(char[] arg)	{ globalParams.threadsToUse = Integer.parse(arg); });
-			parser.bind("+", "q",				{ globalParams.useOQ = true; });
-			parser.bind("+", "noop",			{ globalParams.useOP = false; });
-			parser.bind("+", "nolink",			{ globalParams.nolink = true; });
-			parser.bind("+", "rmo",				{ globalParams.reverseModuleOrder = true; });
-			parser.bind("+", "R",				{ globalParams.recursiveModuleScan = true; });
-			parser.bind("+", "nodeps",			{ globalParams.useDeps = false; });
-			parser.bind("+", "keeprsp",			{ globalParams.removeRspOnFail = false; });
+			parser.bind("full",                     { removeObjs = true; });
+			parser.bind("clean",			        { removeObjs = true; quit = true; });
+			parser.bind("c",		(char[] arg)	{ globalParams.compilerName = arg; });
+			parser.bind("C",		(char[] arg)	{ globalParams.objExt = arg; });		// HACK: should use profiles/configs instead
+			parser.bind("O",		(char[] arg)	{ globalParams.objPath = arg; });
+			parser.bind("D",		(char[] arg)	{ globalParams.depsPath = arg; });
+			parser.bind("o",		(char[] arg)	{ globalParams.outputFile = arg; });
+			parser.bind("x",		(char[] arg)	{ globalParams.ignore ~= arg; });
+			parser.bind("modLimit",	(char[] arg)	{ globalParams.maxModulesToCompile = Integer.parse(arg); });
+			parser.bind("redep",			        { removeDeps = true; });
+			parser.bind("v",				        { globalParams.verbose = globalParams.printCommands = true; });
+			parser.bind("profile",			        { profiling = true; });
+			parser.bind("h",				        { globalParams.manageHeaders = true; });
+			parser.bind("threads",	(char[] arg)	{ globalParams.threadsToUse = Integer.parse(arg); });
+			parser.bind("q",				        { globalParams.useOQ = true; });
+			parser.bind("noop",			            { globalParams.useOP = false; });
+			parser.bind("nolink",			        { globalParams.nolink = true; });
+			parser.bind("rmo",			        	{ globalParams.reverseModuleOrder = true; });
+			parser.bind("R",			        	{ globalParams.recursiveModuleScan = true; });
+			parser.bind("nodeps",		        	{ globalParams.useDeps = false; });
+			parser.bind("keeprsp",		        	{ globalParams.removeRspOnFail = false; });
 
 			// remember to parse the XFBUILDFLAGS _before_ args passed in main()
 			parser.parse(envArgs);

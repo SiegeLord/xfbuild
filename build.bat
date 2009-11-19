@@ -79,8 +79,7 @@ echo     DebugSymbols   = !DebugSymbols!
 rem ---- Create the rsp file
 
 echo -ofxfbuild.exe > build.bat.rsp
-echo tango-user-dmd.lib >> build.bat.rsp
-echo tango-base-dmd.lib >> build.bat.rsp
+echo tango.lib >> build.bat.rsp
 
 if !DebugSymbols!==on   echo -g >> build.bat.rsp
 if !MultiThreading!==on echo -version=MultiThreaded   >> build.bat.rsp

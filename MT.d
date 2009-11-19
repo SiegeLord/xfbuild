@@ -7,7 +7,7 @@ module xfbuild.MT;
 
 version (MultiThreaded) {
 	private {
-		import tango.core.sync.Counter;
+		import tango.core.Atomic;
 		import tango.stdc.stdlib : alloca, abort;
 		import tango.core.Thread;
 		import tango.util.log.Trace;
@@ -57,11 +57,11 @@ version (MultiThreaded) {
 		
 			assert(numPerTask > 0);
 		
-			Flag!(int) numLeft;
+			Atomic!(int) numLeft;
 			int numTasks = (to - from) / numPerTask;
 			
 			assert(numTasks > 0);
-			numLeft = numTasks - 1;
+			numLeft.store(numTasks - 1);
 			
 			void run(int idx)
 			{
@@ -85,7 +85,7 @@ version (MultiThreaded) {
 					Trace.formatln("{}", error);
 					abort();
 				}
-				--numLeft;
+				numLeft.decrement();
 			}
 			
 			for(int i = 0; i < numTasks - 1; ++i)
@@ -93,7 +93,7 @@ version (MultiThreaded) {
 			
 			run(numTasks - 1);
 			
-			while(numLeft() > 0)
+			while(numLeft.load() > 0)
 				{}
 				
 			return 0;

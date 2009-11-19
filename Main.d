@@ -94,14 +94,13 @@ struct ArgParser {
 		char[] t;
 		void delegate() a;
 		void delegate(char[]) b;
-		bool isa;
 	}
 	Reg[] reg;
 	void bind(char[] t, void delegate() a) {
-		reg ~= Reg(t.dup, a, null, true);
+		reg ~= Reg(t.dup, a, null);
 	}
 	void bind(char[] t, void delegate(char[]) b) {
-		reg ~= Reg(t.dup, null, b, false);
+		reg ~= Reg(t.dup, null, b);
 	}
 	void parse(char[][] args) {
 		argIter: foreach (arg; args) {
@@ -113,7 +112,7 @@ struct ArgParser {
 			arg = arg[1..$];
 			foreach (r; reg) {
 				if (r.t.length <= arg.length && r.t == arg[0..r.t.length]) {
-					if (r.isa) r.a();
+					if (r.a !is null) r.a();
 					else r.b(arg[r.t.length..$]);
 					continue argIter;
 				}

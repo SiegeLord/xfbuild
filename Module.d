@@ -123,7 +123,7 @@ class Module
 		m.path = path;
 		m.timeModified = Path.modified(m.path).ticks;
 
-		auto fileData = (new UnicodeFile!(char)(m.path, Encoding.UTF_8)).read();
+		auto fileData = (new UnicodeFile!(char)(m.path, Encoding.Unknown)).read();
 		
 		foreach(line; splitLines(fileData))
 		{

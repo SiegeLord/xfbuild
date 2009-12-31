@@ -384,7 +384,9 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 
 				foreach (th; mtFor(.threadPool, 0, threads)) {
 					auto mods = compileNow[compileNow.length * th / threads .. compileNow.length * (th+1) / threads];
-					Trace.formatln("Thread {}: compiling {} modules", th, mods.length);
+					if (globalParams.verbose) {
+						Trace.formatln("Thread {}: compiling {} modules", th, mods.length);
+					}
 					
 					if (mods.length > 0) {
 						compileAndTrackDeps(mods, modules, threadLater[th]);

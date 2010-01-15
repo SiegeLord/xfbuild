@@ -7,6 +7,7 @@ private {
 	import xfbuild.BuildTask;
 	import xfbuild.Compiler : CompilerError;
 	import xfbuild.GlobalParams;
+	import xfbuild.BuildException;
 	import xf.utils.Profiler;
 
 	import tango.core.Version;
@@ -293,7 +294,7 @@ int main(char[][] allArgs) {
 		}
 
 		return 0;
-	} catch (CompilerError e) {
+	} catch (BuildException e) {
 		Stdout.formatln("Build failed: {}", e);
 		return 1;
 	}

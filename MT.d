@@ -11,6 +11,8 @@ version (MultiThreaded) {
 		import tango.stdc.stdlib : alloca, abort;
 		import tango.core.Thread;
 		import tango.util.log.Trace;
+		
+		import xfbuild.BuildException;
 	}
 
 	public {
@@ -79,7 +81,12 @@ version (MultiThreaded) {
 			{
 				try {
 					run(cast(int)arg);
-				} catch (Exception e) {
+				}
+				catch (BuildException e) {
+					Trace.formatln("Build failed: {}", e);
+					abort();
+				}
+				catch (Exception e) {
 					char[] error;
 					e.writeOut((char[] msg) { error ~= msg; });
 					Trace.formatln("{}", error);

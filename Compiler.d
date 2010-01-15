@@ -5,7 +5,8 @@ private {
 	import xfbuild.Module;
 	import xfbuild.Process;
 	import xfbuild.Misc;
-	
+	import xfbuild.BuildException;
+
 	version (MultiThreaded) {
 		import xfbuild.MT;
 	}
@@ -50,7 +51,7 @@ static this() {
 
 
 
-class CompilerError : Exception {
+class CompilerError : BuildException {
 	this (char[] msg) {
 		super (msg);
 	}

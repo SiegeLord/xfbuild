@@ -8,19 +8,19 @@ private {
 	import xfbuild.Compiler : CompilerError;
 	import xfbuild.GlobalParams;
 	import xfbuild.BuildException;
-	import xf.utils.Profiler;
+	import xfbuild.Process;
 
 	import tango.core.Version;
 	import tango.stdc.stdlib : exit;
 	import tango.sys.Environment : Environment;
 	import Integer = tango.text.convert.Integer;
 	import tango.text.Util : split;
-	import tango.text.json.Json;
+	//import tango.text.json.Json;
 	import tango.io.FilePath;
 	import tango.io.device.File;
+
 	import Path = tango.io.Path;
-	
-	import CPUid = xf.utils.CPUid;
+	import CPUid = xfbuild.CPUid;
 
 	// TODO: better logging
 	import tango.io.Stdout;
@@ -30,44 +30,62 @@ private {
 
 void printHelpAndQuit(int status) {
 	Stdout(
-`xfBuild 0.4 :: Copyright (C) 2009 Team0xf
+`xfBuild 0.5.0
+http://bitbucket.org/h3r3tic/xfbuild/
 
 Usage:
-	xfbuild [--help]
-	xfbuild [ROOT | OPTION | COMPILER OPTION]...
-	
-	Track dependencies and their changes of one or more modules, compile them
-	with COMPILER OPTION(s) and link all objects into OUTPUT [see OPTION(s)].
+    xfbuild [--help]
+    xfbuild [ROOT | OPTION | COMPILER OPTION]...
+    
+    Track dependencies and their changes of one or more modules, compile them
+    with COMPILER OPTION(s) and link all objects into OUTPUT [see OPTION(s)].
 
 ROOT: 
-	String ended with either ".d" or "/" indicating a module
-	or a directory of modules to be compiled, respectively.
-	
-	OPTION(s) are prefixed by "+".
-	COMPILER OPTION(s) are anything that is not OPTION(s) or ROOT(s).
+    String ended with either ".d" or "/" indicating a module
+    or a directory of modules to be compiled, respectively.
+    
+    OPTION(s) are prefixed by "+".
+    COMPILER OPTION(s) are anything that is not OPTION(s) or ROOT(s).
 
 Recognized OPTION(s):
-	+xPACKAGE    Don't compile any modules within the package
-	+full        Perform a full build
-	+clean       Remove object files
-	+redep       Remove the dependency file
-	+v           Print the compilation commands
-	+h           Manage headers for faster compilation
-	+profile     Dump profiling info at the end
-	+modLimitNUM Compile max NUM modules at a time
-	+DDEPS       Put the resulting dependencies into DEPS [default: .deps]
-	+OOBJS       Put compiled objects into OBJS [default: .objs]
-	+q           Use -oq when compiling (only supported by ldc)
-	+noop        Don't use -op when compiling
-	+nolink      Don't link
-	+oOUTPUT     Link objects into the resulting binary OUTPUT
-	+cCOMPILER   Use the D Compiler COMPILER [default: dmd]
-	+CEXT        Extension of the compiler-generated object files [default: .obj on Windows, .o otherwise]
-	+rmo         Reverse Module Order (when compiling - might uncrash OPTLINK)
-	+R           Recursively scan directories for modules
-	+nodeps      Don't use dependencies' file
-	+keeprsp     Don't remove .rsp files upon errors`);
-	version (MultiThreaded) Stdout(\n`	+threadsNUM  Number of theads to use [default: CPU core count]`);
+    +x=PACKAGE      Don't compile any modules within the package
+    +full           Perform a full build
+    +clean          Remove object files
+    +redep          Remove the dependency file
+    +v              Print the compilation commands
+    +h              Manage headers for faster compilation
+`
+//    +profile     Dump profiling info at the end
+`    +mod-limit=NUM  Compile max NUM modules at a time
+    +D=DEPS         Put the resulting dependencies into DEPS [default: .deps]
+    +O=OBJS         Put compiled objects into OBJS [default: .objs]
+    +q              Use -oq when compiling (only supported by ldc)
+    +noop           Don't use -op when compiling
+    +nolink         Don't link
+    +o=OUTPUT       Link objects into the resulting binary OUTPUT
+    +c=COMPILER     Use the D Compiler COMPILER [default: dmd]
+    +C=EXT          Extension of the compiler-generated object files
+                    [default: .obj on Windows, .o otherwise]
+    +rmo            Reverse Module Order
+                    (when compiling - might uncrash OPTLINK)
+    +R              Recursively scan directories for modules
+    +nodeps         Don't use dependencies' file
+    +keeprsp        Don't remove .rsp files upon errors`);
+	version (MultiThreaded) {
+
+		Stdout.formatln(`
+
+Multithreading options:
+    +threads=NUM           Number of theads to use [default: CPU core count]
+    +no-affinity           Do NOT manage process affinity (New feature which
+                           should prevent DMD hanging on multi-core systems)
+    +linker-affinity=MASK  Process affinity mask for the linker
+                           (hexadecimal) [default: {:x} (OS-dependent)]`,
+			globalParams.linkerAffinityMask
+		);
+
+	}
+
 	Stdout(`
 	
 Environment Variables:
@@ -124,7 +142,18 @@ struct ArgParser {
 }
 
 
+void determineSystemSpecificOptions() {
+	version (Windows) {
+		/* Walter has admitted to OPTLINK having issues with threading */
+		globalParams.linkerAffinityMask = getNthAffinityMaskBit(0);
+	}
+}
+
+
 int main(char[][] allArgs) {
+	determineSystemSpecificOptions();
+
+
 	char[][] envArgs;
 	
 	if (Environment.get("XFBUILDFLAGS")) {
@@ -153,7 +182,7 @@ int main(char[][] allArgs) {
 	char[][] mainFiles;
 	
 	try {
-		profile!("main")({
+		//profile!("main")({
 			FilePath[] dirsAndModules;
 
 			foreach(arg; allArgs[1..$])
@@ -183,21 +212,36 @@ int main(char[][] allArgs) {
 			bool quit	= false;
 			bool removeObjs	= false;
 			bool removeDeps	= false;
+
+			// support for the olde arg style where they didn't have to be
+			// preceded with an equal sign
+			char[] olde(char[] arg) {
+				if (arg.length > 0 && '=' == arg[0]) {
+					return arg[1..$];
+				} else {
+					return arg;
+				}
+			}
 			
 			parser.bind("full",                     { removeObjs = true; });
 			parser.bind("clean",			        { removeObjs = true; quit = true; });
-			parser.bind("c",		(char[] arg)	{ globalParams.compilerName = arg; });
-			parser.bind("C",		(char[] arg)	{ globalParams.objExt = arg; });		// HACK: should use profiles/configs instead
-			parser.bind("O",		(char[] arg)	{ globalParams.objPath = arg; });
-			parser.bind("D",		(char[] arg)	{ globalParams.depsPath = arg; });
-			parser.bind("o",		(char[] arg)	{ globalParams.outputFile = arg; });
-			parser.bind("x",		(char[] arg)	{ globalParams.ignore ~= arg; });
-			parser.bind("modLimit",	(char[] arg)	{ globalParams.maxModulesToCompile = Integer.parse(arg); });
+			parser.bind("c",		(char[] arg)	{ globalParams.compilerName = olde(arg); });
+			parser.bind("C",		(char[] arg)	{ globalParams.objExt = olde(arg); });		// HACK: should use profiles/configs instead
+			parser.bind("O",		(char[] arg)	{ globalParams.objPath = olde(arg); });
+			parser.bind("D",		(char[] arg)	{ globalParams.depsPath = olde(arg); });
+			parser.bind("o",		(char[] arg)	{ globalParams.outputFile = olde(arg); });
+			parser.bind("x",		(char[] arg)	{ globalParams.ignore ~= olde(arg); });
+			parser.bind("modLimit",	(char[] arg)	{ globalParams.maxModulesToCompile = cast(int)Integer.parse(olde(arg)); });
+			parser.bind("mod-limit=",	(char[] arg){ globalParams.maxModulesToCompile = cast(int)Integer.parse(arg); });
 			parser.bind("redep",			        { removeDeps = true; });
 			parser.bind("v",				        { globalParams.verbose = globalParams.printCommands = true; });
-			parser.bind("profile",			        { profiling = true; });
+			//parser.bind("profile",			        { profiling = true; });
 			parser.bind("h",				        { globalParams.manageHeaders = true; });
-			parser.bind("threads",	(char[] arg)	{ globalParams.threadsToUse = Integer.parse(arg); });
+			
+			parser.bind("threads",	(char[] arg)	{ globalParams.threadsToUse = cast(int)Integer.parse(olde(arg)); });
+			parser.bind("no-affinity",				{ globalParams.manageAffinity = false; });
+			parser.bind("linker-affinity=",	(char[] arg){ globalParams.linkerAffinityMask = cast(size_t)Integer.parse(olde(arg), 16); });
+			
 			parser.bind("q",				        { globalParams.useOQ = true; });
 			parser.bind("noop",			            { globalParams.useOP = false; });
 			parser.bind("nolink",			        { globalParams.nolink = true; });
@@ -243,7 +287,7 @@ int main(char[][] allArgs) {
 				globalParams.nolink = true;
 			}
 			
-			{
+			/+{
 				if (Path.exists(globalParams.projectFile) && Path.isFile(globalParams.projectFile)) {
 					scope json = new Json!(char);
 					auto jobj = json.parse('{' ~ cast(char[])File.get(globalParams.projectFile) ~ '}').toObject.hashmap();
@@ -255,7 +299,7 @@ int main(char[][] allArgs) {
 						}
 					}
 				}
-			}
+			}+/
 			
 			version (MultiThreaded) {
 				.threadPool = new ThreadPoolT(globalParams.threadsToUse);
@@ -274,16 +318,16 @@ int main(char[][] allArgs) {
 					buildTask.removeObjFiles();
 				
 				if(quit)
-					return;
+					return 0;
 				
 				if(mainFiles is null)
 					throw new Exception("At least one MODULE needs to be specified, see +help");
 					
 				buildTask.execute();
 			}
-		});
+		//});
 		
-		if (profiling) {
+		/+if (profiling) {
 			scope formatter = new ProfilingDataFormatter;
 			foreach (row, col, node; formatter) {
 				char[256] spaces = ' ';
@@ -291,7 +335,7 @@ int main(char[][] allArgs) {
 				if (numSpaces < 0) numSpaces = 0;
 				Stdout.formatln("{}{}{}", node.bottleneck ? "*" : "", spaces[0..numSpaces], node.text);
 			}
-		}
+		}+/
 
 		return 0;
 	} catch (BuildException e) {

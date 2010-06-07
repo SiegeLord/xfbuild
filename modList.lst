@@ -8,9 +8,4 @@ Linker.d
 Misc.d
 MT.d
 BuildException.d
-../utils/Profiler.d
-../utils/HardwareTimer.d
-../utils/Memory.d
-../utils/CPUid.d
-../utils/Singleton.d
-
+CPUid.d

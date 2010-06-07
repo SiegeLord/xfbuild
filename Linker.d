@@ -63,10 +63,13 @@ bool link(ref Module[char[]] modules,char[][] mainFiles=null)
 	
 	args ~= "-of" ~ globalParams.outputFile;
 	
-	if(!globalParams.recompileOnUndefinedReference)
-		executeCompilerViaResponseFile(args[0], args[1..$]);
-	else
-	{
+	if (!globalParams.recompileOnUndefinedReference) {
+		executeCompilerViaResponseFile(
+			args[0],
+			args[1..$],
+			globalParams.linkerAffinityMask
+		);
+	} else {
 		scope process = new Process(true, args);
 		execute(process);
 		

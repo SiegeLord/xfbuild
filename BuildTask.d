@@ -7,11 +7,11 @@ private {
 	import xfbuild.Linker;
 	import xfbuild.Misc;
 	
-	import xf.utils.Profiler;
+	//import xf.utils.Profiler;
 
 	import Path = tango.io.Path;
 	import tango.io.device.File;
-	import tango.io.device.FileMap;
+	import tango.io.stream.Buffered;
 	import tango.io.stream.Lines;
 	import tango.text.Regex;
 	import Integer = tango.text.convert.Integer;
@@ -39,35 +39,35 @@ scope class BuildTask {
 	
 	this(char[][] mainFiles ...) {
 		this.mainFiles = mainFiles.dup;
-		profile!("BuildTask.readDeps")({
+		//profile!("BuildTask.readDeps")({
 			readDeps();
-		});
+		//});
 	}
 	
 	
 	~this() {
-		profile!("BuildTask.writeDeps")({
+		//profile!("BuildTask.writeDeps")({
 			writeDeps();
-		});
+		//});
 	}
 	
 	
 	void execute() {
-		profile!("BuildTask.execute")({
+		//profile!("BuildTask.execute")({
 			if(globalParams.nolink)
 				compile();
 			else
 				do compile(); while(link());
-		});
+		//});
 	}
 	
 	
 	void compile() {
-		profile!("BuildTask.compile")({
+		//profile!("BuildTask.compile")({
 			//if (moduleStack.length > 0) {
 				.compile(modules);
 			//}
-		});
+		//});
 	}
 	
 	
@@ -76,16 +76,19 @@ scope class BuildTask {
 			return false;
 		}
 
-		return profile!("BuildTask.link")({
+		//return profile!("BuildTask.link")({
 			return .link(modules,mainFiles);
-		});
+		//});
 	}
 	
 
 	private void readDeps() {
 		if (globalParams.useDeps && Path.exists(globalParams.depsPath)) {
-			auto file = new FileMap(globalParams.depsPath);
-			scope(exit) file.close();
+			scope rawFile = new File(globalParams.depsPath, File.ReadExisting);
+			scope file = new BufferedInput(rawFile);
+			scope (exit) {
+				rawFile.close();
+			}
 			
 			foreach(line; new Lines!(char)(file)) {
 				line = TextUtil.trim(line);
@@ -208,9 +211,11 @@ scope class BuildTask {
 
 	private void writeDeps()
 	{
-		scope file = new File(globalParams.depsPath, File.WriteCreate);
+		auto rawFile = new File(globalParams.depsPath, File.WriteCreate);
+		auto file = new BufferedOutput(rawFile);
 		scope(exit) {
-			file.flush;
+			file.flush();
+			rawFile.close();
 		}
 		
 		foreach(m; modules) {

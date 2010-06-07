@@ -8,7 +8,7 @@ if not "%1"=="__delayed__" goto needDelayed
 rem ---- Defaults
 
 set xf=..
-set MultiThreading=off
+set MultiThreading=on
 set StackTracing=on
 set DebugSymbols=on
 
@@ -118,7 +118,7 @@ echo --with [feature]     compiles xfbuild with specific functionality
 echo     Available features:
 echo         StackTracing   [default=on]
 echo         DebugSymbols   [default=on]
-echo         MultiThreading [default=off]
+echo         MultiThreading [default=on]
 echo.
 
 :end

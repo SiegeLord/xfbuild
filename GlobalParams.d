@@ -14,7 +14,7 @@ struct GlobalParams {
 	char[][] compilerOptions;
 	char[] objPath = ".objs";
 	char[] depsPath = ".deps";
-	char[] projectFile = "project.xfbuild";
+	//char[] projectFile = "project.xfbuild";
 	version(Windows) {
 		char[] objExt = ".obj";
 		char[] exeExt = ".exe";
@@ -48,6 +48,9 @@ struct GlobalParams {
 
 	bool recursiveModuleScan = false;
 	bool useDeps = true;
+
+	bool manageAffinity = true;
+	size_t linkerAffinityMask = size_t.max;
 }
 
 

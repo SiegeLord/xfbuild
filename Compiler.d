@@ -11,9 +11,11 @@ private {
 		import xfbuild.MT;
 	}
 
-	import xf.utils.Profiler;
+	//import xf.utils.Profiler;
 
-	import tango.io.device.FileMap;
+	import tango.core.Exception;
+	import tango.io.device.File;
+	import tango.io.stream.Buffered;
 	import tango.sys.Process;
 	import tango.io.stream.Lines;
 	import tango.text.Regex;
@@ -72,8 +74,12 @@ private char[] unescapePath(char[] path) {
 }
 
 
-void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref Module[] compileMore)
-{
+void compileAndTrackDeps(
+		Module[] compileArray,
+		ref Module[char[]] modules,
+		ref Module[] compileMore,
+		size_t affinity
+) {
 	Module getModule(char[] name, char[] path, bool* newlyEncountered = null) {
 		Module worker() {
 			if (auto mp = name in modules) {
@@ -92,6 +98,7 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 				mod.name = name.dup;
 				mod.path = path.dup;
 				mod.timeModified = Path.modified(mod.path).ticks;
+				assert (modules !is null);
 				modules[mod.name] = mod;
 				compileMore ~= mod;
 				return mod;
@@ -118,11 +125,13 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 	}
 
 	try {
-		compile (opts, compileArray, (char[] line) {
-			if(!isVerboseMsg(line) && TextUtil.trim(line).length)
-				Stderr(line).newline;
-		},
-			globalParams.compilerName != "increBuild" // ==moveObjects?
+		compile(opts, compileArray, (char[] line) {
+				if (!isVerboseMsg(line) && TextUtil.trim(line).length) {
+					Stderr(line).newline;
+				}
+			},
+			globalParams.compilerName != "increBuild", // ==moveObjects?
+			affinity
 		);
 	} catch (ProcessExecutionException e) {
 		throw new CompilerError(e.msg);
@@ -135,10 +144,11 @@ void compileAndTrackDeps(Module[] compileArray, ref Module[char[]] modules, ref 
 	}
 
 	if (globalParams.useDeps) {
-		scope depsFile = new FileMap(depsFileName);
+		scope depsRawFile = new File(depsFileName, File.ReadExisting);
+		scope depsFile = new BufferedInput(depsRawFile);
 		
-		scope(exit) {
-			depsFile.close();
+		scope (exit) {
+			depsRawFile.close();
 			Path.remove(depsFileName);
 		}
 
@@ -199,10 +209,11 @@ void compile(
 		char[][] extraArgs,
 		Module[] compileArray,
 		void delegate(char[]) stdout,
-		bool moveObjects
+		bool moveObjects,
+		size_t affinity,
 ) {
-	void execute(char[][] args) {
-		executeCompilerViaResponseFile(args[0], args[1..$]);
+	void execute(char[][] args, size_t affinity) {
+		executeCompilerViaResponseFile(args[0], args[1..$], affinity);
 		/+scope process = new Process(true, args);
 		.execute(process);
 		foreach(line; new Lines!(char)(process.stdout)) {
@@ -214,7 +225,7 @@ void compile(
 		//Stdout.formatln("process finished");+/
 	}
 	
-	if(compileArray.length)
+	if (compileArray.length)
 	{
 		if(!globalParams.useOP && !globalParams.useOQ)
 		{
@@ -230,7 +241,7 @@ void compile(
 				foreach(m; group)
 					args ~= m.path;
 
-				execute(args);
+				execute(args, affinity);
 
 				if (moveObjects) {
 					foreach(m; group)
@@ -286,13 +297,16 @@ void compile(
 				
 			auto compiled = compileArray.dup;
 			
-			execute(args);
-			
+			execute(args, affinity);
 
 			if (moveObjects) {
 				if (!globalParams.useOQ) {
-					foreach(m; compiled)
-						Path.rename(m.objFileInFolder, m.objFile);
+					try {
+						foreach(m; compiled)
+							Path.rename(m.objFileInFolder, m.objFile);
+					} catch (IOException e) {
+						throw new CompilerError(e.msg);
+					}
 				}
 			}
 		}
@@ -311,7 +325,7 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 	
 	Module[] compileArray;
 	
-	profile!("finding modules to be compiled")({
+	//profile!("finding modules to be compiled")({
 		bool[Module][Module] revDeps;
 		foreach (mname, m; modules) {
 			foreach (d; m.deps) {
@@ -357,7 +371,7 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 		if (globalParams.verbose) {
 			Stdout.formatln("Modules to be compiled: {}", compileArray);
 		}
-	});
+	//});
 	
 	Module[] compileMore;
 	
@@ -377,9 +391,17 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 			compileLater = compileArray[globalParams.maxModulesToCompile .. $];
 		}
 		
-		profile!("compileAndTrackDeps")({
+		//profile!("compileAndTrackDeps")({
 			version (MultiThreaded) {
-				final int threads = globalParams.threadsToUse;
+				int threads = globalParams.threadsToUse;
+
+				// HACK: because affinity is stored in size_t
+				// which is also what WinAPI expects;
+				// TODO: do this properly one day :P
+				if (threads > size_t.sizeof * 8) {
+					threads = size_t.sizeof * 8;
+				}
+				
 				Module[][] threadNow = new Module[][threads];
 				Module[][] threadLater = new Module[][threads];
 
@@ -390,7 +412,12 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 					}
 					
 					if (mods.length > 0) {
-						compileAndTrackDeps(mods, modules, threadLater[th]);
+						compileAndTrackDeps(
+							mods,
+							modules,
+							threadLater[th],
+							getNthAffinityMaskBit(th)
+						);
 					}
 				}
 				
@@ -398,9 +425,9 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 					compileLater ~= later;
 				}
 			} else {
-				compileAndTrackDeps(compileNow, modules, compileLater);
+				compileAndTrackDeps(compileNow, modules, compileLater, size_t.max);
 			}
-		});
+		//});
 		
 		//Stdout.formatln("compileMore: {}", compileMore);
 		

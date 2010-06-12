@@ -49,7 +49,12 @@ struct GlobalParams {
 	bool recursiveModuleScan = false;
 	bool useDeps = true;
 
-	bool manageAffinity = true;
+	version (MultiThreaded) {
+		bool manageAffinity = true;
+	} else {
+		bool manageAffinity = false;
+	}
+
 	size_t linkerAffinityMask = size_t.max;
 }
 

@@ -302,8 +302,19 @@ void compile(
 			if (moveObjects) {
 				if (!globalParams.useOQ) {
 					try {
-						foreach(m; compiled)
-							Path.rename(m.objFileInFolder, m.objFile);
+						foreach(m; compiled) {
+							try {
+								Path.rename(m.objFileInFolder, m.objFile);
+							} catch (IOException) {
+								// If the source file being compiled (and hence the
+								// object file as well) and the object directory are
+								// on different volumes, just renaming the file is an
+								// invalid operation on *nix (cross-device link).
+								// Hence, try copy/remove before erroring out.
+								Path.copy(m.objFileInFolder, m.objFile);
+								Path.remove(m.objFileInFolder);
+							}
+						}
 					} catch (IOException e) {
 						throw new CompilerError(e.msg);
 					}

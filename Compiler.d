@@ -57,6 +57,9 @@ class CompilerError : BuildException {
 	this (char[] msg) {
 		super (msg);
 	}
+    this(char[]m,char[]fl,long ln,Exception next=null){
+        super(m,fl,ln,next);
+    }
 }
 
 
@@ -124,17 +127,40 @@ void compileAndTrackDeps(
 		opts ~= ["-deps=" ~ depsFileName];
 	}
 
-	try {
-		compile(opts, compileArray, (char[] line) {
-				if (!isVerboseMsg(line) && TextUtil.trim(line).length) {
-					Stderr(line).newline;
-				}
-			},
-			globalParams.compilerName != "increBuild", // ==moveObjects?
-			affinity
-		);
-	} catch (ProcessExecutionException e) {
-		throw new CompilerError(e.msg);
+        if (globalParams.moduleByModule){
+            foreach(mod;compileArray){
+                try{
+                    compile(opts,[mod], (char[] line) {
+                        if (!isVerboseMsg(line) && TextUtil.trim(line).length) {
+                            Stderr(line).newline;
+                        }
+                    },
+                            globalParams.compilerName != "increBuild", // ==moveObjects?
+                            affinity
+                        );
+                } catch(ProcessExecutionException e){
+                    throw new CompilerError("Error compiling "~mod.name,__FILE__,__LINE__,e);
+                }
+            }
+        } else {
+            try{
+                compile(opts, compileArray, (char[] line) {
+                    if (!isVerboseMsg(line) && TextUtil.trim(line).length) {
+                        Stderr(line).newline;
+                    }
+                },
+                        globalParams.compilerName != "increBuild", // ==moveObjects?
+                        affinity
+                    );
+            } catch (ProcessExecutionException e) {
+                char[] mods;
+                foreach(i,m;compileArray){
+                    if (i!=0) mods~=",";
+                    mods~=m.name;
+                }
+		throw new CompilerError("Error compiling "~mods,__FILE__,
+                                        __LINE__,e);
+            }
 	}
 
 	// This must be done after the compilation so if the compiler errors out,

@@ -68,6 +68,8 @@ Recognized OPTION(s):
                     [default: .obj on Windows, .o otherwise]
     +rmo            Reverse Module Order
                     (when compiling - might uncrash OPTLINK)
+    +mbm            Module By Module, compiles one module at a time
+                    (useful to debug some compiler bugs)
     +R              Recursively scan directories for modules
     +nodeps         Don't use dependencies' file
     +keeprsp        Don't remove .rsp files upon errors`);
@@ -246,6 +248,7 @@ int main(char[][] allArgs) {
 			parser.bind("noop",			            { globalParams.useOP = false; });
 			parser.bind("nolink",			        { globalParams.nolink = true; });
 			parser.bind("rmo",			        	{ globalParams.reverseModuleOrder = true; });
+			parser.bind("mbm",			        	{ globalParams.moduleByModule = true; });
 			parser.bind("R",			        	{ globalParams.recursiveModuleScan = true; });
 			parser.bind("nodeps",		        	{ globalParams.useDeps = false; });
 			parser.bind("keeprsp",		        	{ globalParams.removeRspOnFail = false; });

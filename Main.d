@@ -34,7 +34,7 @@ void printHelpAndQuit(int status) {
 http://bitbucket.org/h3r3tic/xfbuild/
 
 Usage:
-    xfbuild [--help]
+    xfbuild [+help]
     xfbuild [ROOT | OPTION | COMPILER OPTION]...
     
     Track dependencies and their changes of one or more modules, compile them
@@ -173,7 +173,7 @@ int main(char[][] allArgs) {
 		printHelpAndQuit(1);
 	}
 	
-	if (2 == allArgs.length && "--help" == allArgs[1]) {
+	if (2 == allArgs.length && "+help" == allArgs[1]) {
 		// standard help screen
 		printHelpAndQuit(0);
 	}

@@ -51,7 +51,7 @@ Recognized OPTION(s):
     +x=PACKAGE      Don't compile any modules within the package
     +full           Perform a full build
     +clean          Remove object files
-    +redep          Remove the dependency file
+    +redep          Remove the dependency file afterwards
     +v              Print the compilation commands
     +h              Manage headers for faster compilation
 `
@@ -309,16 +309,17 @@ int main(char[][] allArgs) {
 			}
 				
 			{
-				scope buildTask = new BuildTask(mainFiles);
+
+				scope buildTask = new BuildTask(!removeDeps, mainFiles);
 				
 				if(!Path.exists(globalParams.objPath))
 					Path.createFolder(globalParams.objPath);
 
-				if(removeDeps)
-					Path.remove(globalParams.depsPath);
-
 				if(removeObjs)
 					buildTask.removeObjFiles();
+
+                if(removeDeps)
+                    Path.remove(globalParams.depsPath);
 				
 				if(quit)
 					return 0;
@@ -327,8 +328,9 @@ int main(char[][] allArgs) {
 					throw new Exception("At least one MODULE needs to be specified, see +help");
 					
 				buildTask.execute();
-			}
-		//});
+            }
+
+            //});
 		
 		/+if (profiling) {
 			scope formatter = new ProfilingDataFormatter;

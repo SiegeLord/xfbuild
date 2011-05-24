@@ -33,21 +33,28 @@ static this() {
 
 scope class BuildTask {
 	Module[char[]]	modules;
-	char[][]	mainFiles;
+	char[][]	    mainFiles;
+    bool            doWriteDeps = true;
 	//Module[]	moduleStack;
 	
 	
-	this(char[][] mainFiles ...) {
+	this ( bool doWriteDeps, char[][] mainFiles ...) 
+    {
+        this.doWriteDeps = doWriteDeps;
 		this.mainFiles = mainFiles.dup;
 		//profile!("BuildTask.readDeps")({
-			readDeps();
+		readDeps();
 		//});
+
+
 	}
 	
 	
-	~this() {
+	~this ( ) 
+    {
 		//profile!("BuildTask.writeDeps")({
-			writeDeps();
+        if (this.doWriteDeps)
+    		writeDeps();
 		//});
 	}
 	

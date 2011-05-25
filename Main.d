@@ -233,16 +233,16 @@ int main(char[][] allArgs) {
 			parser.bind("D",		(char[] arg)	{ globalParams.depsPath = olde(arg); });
 			parser.bind("o",		(char[] arg)	{ globalParams.outputFile = olde(arg); });
 			parser.bind("x",		(char[] arg)	{ globalParams.ignore ~= olde(arg); });
-			parser.bind("modLimit",	(char[] arg)	{ globalParams.maxModulesToCompile = cast(int)Integer.parse(olde(arg)); });
-			parser.bind("mod-limit=",	(char[] arg){ globalParams.maxModulesToCompile = cast(int)Integer.parse(arg); });
+			parser.bind("modLimit",	(char[] arg)	{ globalParams.maxModulesToCompile = cast(int)Integer.toInt(olde(arg)); });
+			parser.bind("mod-limit=",	(char[] arg){ globalParams.maxModulesToCompile = cast(int)Integer.toInt(arg); });
 			parser.bind("redep",			        { removeDeps = true; });
 			parser.bind("v",				        { globalParams.verbose = globalParams.printCommands = true; });
 			//parser.bind("profile",			        { profiling = true; });
 			parser.bind("h",				        { globalParams.manageHeaders = true; });
 			
-			parser.bind("threads",	(char[] arg)	{ globalParams.threadsToUse = cast(int)Integer.parse(olde(arg)); });
+			parser.bind("threads",	(char[] arg)	{ globalParams.threadsToUse = cast(int)Integer.toInt(olde(arg)); });
 			parser.bind("no-affinity",				{ globalParams.manageAffinity = false; });
-			parser.bind("linker-affinity=",	(char[] arg){ globalParams.linkerAffinityMask = cast(size_t)Integer.parse(olde(arg), 16); });
+			parser.bind("linker-affinity=",	(char[] arg){ globalParams.linkerAffinityMask = cast(size_t)Integer.toInt(olde(arg), 16); });
 			
 			parser.bind("q",				        { globalParams.useOQ = true; });
 			parser.bind("noop",			            { globalParams.useOP = false; });

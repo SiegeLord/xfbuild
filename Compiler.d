@@ -62,7 +62,7 @@ class CompilerError : BuildException {
     }
 }
 
-
+// TODO: Cache the escaped paths?
 private char[] unescapePath(char[] path) {
 	char[] res = (new char[path.length])[0..0];
 	for (int i = 0; i < path.length; ++i) {
@@ -70,7 +70,9 @@ private char[] unescapePath(char[] path) {
 			case '\\': ++i;
 				// fall through
 			default:
+//                Stdout.formatln("concatenating {}", path[i]).flush;
 				res ~= path[i];
+//                Stdout.formatln("done").flush;
 		}
 	}
 	return res;
@@ -183,7 +185,7 @@ void compileAndTrackDeps(
 				auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` : `, null, ` (`, null, `)`, null);
 				if (arr !is null) {
 					char[] modName = arr[0].dup;
-					char[] modPath = unescapePath(arr[1].dup);
+					char[] modPath = unescapePath(arr[1]);
 
 					//char[] prot = arr[2];
 
@@ -192,7 +194,7 @@ void compileAndTrackDeps(
 						Module m = getModule(modName, modPath);
 
 						char[] depName = arr[3].dup;
-						char[] depPath = unescapePath(arr[4].dup);
+						char[] depPath = unescapePath(arr[4]);
 					
 						if (depName != "object" && !isIgnored(depName)) {
 							assert (depPath.length > 0);

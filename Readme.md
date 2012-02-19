@@ -11,6 +11,6 @@ This port uses the TangoD2 library, which you can obtain here: https://github.co
 
 Then you can run the usual build commands:
 
-./build.sh - if you have dmd
-./ldcBuild.sh - if you have ldc2
-./build.bat - if you're on Windows and have dmd
+* ./build.sh - if you have dmd
+* ./ldcBuild.sh - if you have ldc2
+* ./build.bat - if you're on Windows and have dmd

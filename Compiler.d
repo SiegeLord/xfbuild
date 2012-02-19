@@ -183,7 +183,7 @@ void compileAndTrackDeps(
 		//profile!("deps parsing")({
 			foreach (line; new Lines!(char)(depsFile)) {
 				auto arr = line.decomposeString(cast(char[])null, ` (`, null, `) : `, null, ` : `, null, ` (`, null, `)`, null);
-				if (arr !is null) {
+				if (arr !is null && arr[0] != "object") {
 					char[] modName = arr[0].dup;
 					char[] modPath = unescapePath(arr[1]);
 

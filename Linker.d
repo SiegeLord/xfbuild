@@ -25,7 +25,7 @@ static this() {
 	//linkerFileRegex = Regex(`([a-zA-Z0-9.:_\-\\/]+)\(.*\)`);
 }+/
 
-bool isValidObjFileName(char[] f) {
+bool isValidObjFileName(const(char)[] f) {
 	foreach (c; f) {
 		if (!isalnum(c) && !(`.:_-\/`.contains(c))) {
 			return false;
@@ -37,11 +37,11 @@ bool isValidObjFileName(char[] f) {
 
 
 
-bool link(ref Module[char[]] modules,char[][] mainFiles=null)
+bool link(ref Module[char[]] modules,const(char[])[] mainFiles=null)
 {
 	bool retryCompile;
 
-	char[][] args;
+	const(char)[][] args;
 	args ~= globalParams.compilerName;
 	args ~= globalParams.compilerOptions;
 	foreach (k;mainFiles){
@@ -73,7 +73,7 @@ bool link(ref Module[char[]] modules,char[][] mainFiles=null)
 		scope process = new Process(true, args);
 		execute(process);
 		
-		char[] currentFile = null;
+		const(char)[] currentFile = null;
 		Module currentModule = null;
 		
 		version (Windows) {

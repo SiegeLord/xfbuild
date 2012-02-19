@@ -32,8 +32,8 @@ static this() {
 
 class Module
 {
-	char[] name;
-	char[] path;
+	const(char)[] name;
+	const(char)[] path;
 
 	bool isHeader()
 	{
@@ -41,7 +41,7 @@ class Module
 		return path[$ - 1] == 'i';
 	}
 
-	char[] lastName()
+	const(char)[] lastName()
 	{
 		auto dotPos = TextUtil.locatePrior(name, '.');
 		if(dotPos == name.length) dotPos = 0;
@@ -50,7 +50,7 @@ class Module
 		return name[dotPos .. $];
 	}
 	
-	char[] objFileInFolder()
+	const(char)[] objFileInFolder()
 	{
 		auto dotPos = TextUtil.locatePrior(path, '.');
 		assert(dotPos != path.length, name);
@@ -58,7 +58,7 @@ class Module
 		return path[0 .. dotPos] ~ globalParams.objExt;
 	}
 	
-	char[][] depNames;
+	const(char)[][] depNames;
 	Module[] deps;		// only direct deps
 	
 	long timeDep;
@@ -67,9 +67,9 @@ class Module
 	bool wasCompiled;
 	bool needRecompile;
 		
-	private char[] objFile_;
+	private const(char)[] objFile_;
 	
-	char[] objFile()
+	const(char)[] objFile()
 	{
 		if(objFile_)
 			return objFile_;
@@ -83,7 +83,8 @@ class Module
 	
 	bool modified() { return timeModified > timeDep; }
 	
-	char[] toString() { return name; }
+	override
+	immutable(char)[] toString() { return name.idup; }
 
 	override hash_t toHash() {
 		return typeid(typeof(path)).getHash(cast(void*)&path);
@@ -116,7 +117,7 @@ class Module
 	}
 	
 	
-	static Module fromFile(char[] path) {
+	static Module fromFile(const(char)[] path) {
 		path = path.dup;
 		
 		auto m = new Module;
@@ -143,14 +144,14 @@ class Module
 		}
 
 		if(!m.name)
-			throw new Exception(Format("module '{}' needs module header", path));
+			throw new Exception(Format("module '{}' needs module header", path).idup);
 			
 		return m;
 	}
 }
 
 
-bool isIgnored(char[] name)
+bool isIgnored(const(char)[] name)
 {
 	foreach(m; globalParams.ignore)
 	{

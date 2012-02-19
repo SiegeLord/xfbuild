@@ -7,13 +7,13 @@ private {
 
 
 
-bool startsWith(char[] foo, char[] prefix) {
+bool startsWith(const(char)[] foo, const(char)[] prefix) {
 	return foo.length >= prefix.length && foo[0..prefix.length] == prefix;
 }
 
 
-char[][] decomposeString(char[] str, char[][] foo ...) {
-	char[][] res;
+const(char)[][] decomposeString(const(char)[] str, const(char[])[] foo ...) {
+	const(char)[][] res;
 	
 	foreach (fi, f; foo) {
 		if (f is null) {
@@ -24,7 +24,7 @@ char[][] decomposeString(char[] str, char[][] foo ...) {
 			} else {
 				auto delim = foo[fi+1];
 				assert (delim !is null);
-				int l = str.locatePattern(delim);
+				auto l = str.locatePattern(delim);
 				if (l == str.length) {
 					return null;		// fail
 				}
@@ -51,7 +51,7 @@ char[][] decomposeString(char[] str, char[][] foo ...) {
 
 
 unittest {
-	void test(char[][] res, char[] str, char[][] decompose ...) {
+	void test(const(char[])[] res, const(char)[] str, const(char[])[] decompose ...) {
 		assert (res == str.decomposeString(decompose), Format("Failed on: {}: got {} instead of {}", str, str.decomposeString(decompose), res));
 	}
 	test(["Foo.bar.Baz"], `Import::semantic(Foo.bar.Baz)`, `Import::semantic(`, null, `)`);

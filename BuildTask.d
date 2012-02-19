@@ -22,10 +22,10 @@ private {
 
 
 private {
-	Regex depLineRegex;
+	__gshared Regex depLineRegex;
 }
 
-static this() {
+shared static this() {
 	//defend.sim.obj.Building defend\sim\obj\Building.d 633668860572812500 defend.Main,defend.sim.Import,defend.sim.obj.House,defend.sim.obj.Citizen,defend.sim.civ.Test,
 	//depLineRegex = Regex(`([a-zA-Z0-9._]+)\ ([a-zA-Z0-9.:_\-\\/]+)\ ([0-9]+)\ (.*)`);
 }
@@ -33,12 +33,12 @@ static this() {
 
 scope class BuildTask {
 	Module[char[]]	modules;
-	char[][]	    mainFiles;
+	const(char)[][]	mainFiles;
     bool            doWriteDeps = true;
 	//Module[]	moduleStack;
 	
 	
-	this ( bool doWriteDeps, char[][] mainFiles ...) 
+	this ( bool doWriteDeps, const(char[])[] mainFiles ...) 
     {
         this.doWriteDeps = doWriteDeps;
 		this.mainFiles = mainFiles.dup;
@@ -125,7 +125,7 @@ scope class BuildTask {
 					arr = line.decomposeString(cast(char[])null, ` `, null, ` `, null);
 				}
 				if (arr is null)
-					throw new Exception("broken .deps file (line: " ~ line ~ ")");
+					throw new Exception("broken .deps file (line: " ~ line.idup ~ ")");
 
 				auto name = arr[0].dup;
 				auto path = arr[1].dup;
@@ -133,7 +133,7 @@ scope class BuildTask {
 				try {
 					time = Integer.toLong(arr[2]);
 				} catch (Exception e) {
-					throw new Exception("broken .deps file (line: " ~ line ~ ")");
+					throw new Exception("broken .deps file (line: " ~ line.idup ~ ")");
 				}
 				auto deps = arr.length > 3 ? arr[3].dup : null;
 			
@@ -191,7 +191,7 @@ scope class BuildTask {
 					m.depNames ~= dep;
 				}
 				
-				modules[name] = m;
+				modules[name.idup] = m;
 			}
 			
 			foreach(m; modules)

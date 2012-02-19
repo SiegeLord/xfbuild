@@ -2,7 +2,7 @@ module xfbuild.GlobalParams;
 
 private {
 	version (MultiThreaded) {
-		import xfbuild.MT : ThreadPoolT;
+		static import xfbuild.MT;
 	}
 	
 	import tango.io.model.IFile;
@@ -10,24 +10,24 @@ private {
 
 
 struct GlobalParams {
-	char[] compilerName;
-	char[][] compilerOptions;
-	char[] objPath = ".objs";
-	char[] depsPath = ".deps";
-	//char[] projectFile = "project.xfbuild";
+	const(char)[] compilerName;
+	const(char)[][] compilerOptions;
+	const(char)[] objPath = ".objs";
+	const(char)[] depsPath = ".deps";
+	//const(char)[] projectFile = "project.xfbuild";
 	version(Windows) {
-		char[] objExt = ".obj";
-		char[] exeExt = ".exe";
+		const(char)[] objExt = ".obj";
+		const(char)[] exeExt = ".exe";
 	} else {
-		char[] objExt = ".o";
-		char[] exeExt = "";
+		const(char)[] objExt = ".o";
+		const(char)[] exeExt = "";
 	}
-	char[] outputFile;
-	char[] workingPath;
-	char[][] ignore;
+	const(char)[] outputFile;
+	const(char)[] workingPath;
+	const(char)[][] ignore;
 	
 	bool manageHeaders = false;
-	char[][] noHeaders;
+	const(char)[][] noHeaders;
 	
 	bool verbose;
 	bool printCommands;
@@ -60,8 +60,8 @@ struct GlobalParams {
 }
 
 
-GlobalParams	globalParams;
+__gshared GlobalParams globalParams;
 
 version (MultiThreaded) {
-	ThreadPoolT		threadPool;
+	__gshared xfbuild.MT.ThreadPoolT		threadPool;
 }

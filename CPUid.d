@@ -69,9 +69,9 @@ version(D_InlineAsm_X86)
     }
 
     /// Returns vendor string
-    char[] vendor()        {return vendorStr;}
+    const(char)[] vendor()        {return vendorStr;}
     /// Returns processor string
-    char[] processor()        {return processorStr;}
+    const(char)[] processor()        {return processorStr;}
 
     /// Is MMX supported?
     bool mmx()            {return (flags&MMX_BIT)!=0;}
@@ -118,7 +118,7 @@ version(D_InlineAsm_X86)
     uint family()        {return _family;}
     //uint processorType()    {return (signature>>>12)&0x3;}
 
-    static this()
+    shared static this()
     {
     getVendorString();
     getProcessorString();
@@ -207,15 +207,15 @@ private:
         AMD
     }
 
-    uint flags, misc, exflags, apic, signature;
-    uint _stepping, _model, _family;
+    __gshared uint flags, misc, exflags, apic, signature;
+    __gshared uint _stepping, _model, _family;
 
-    char[12] vendorStr = "";
-    char[] processorStr = "";
+    __gshared const(char)[12] vendorStr = "";
+    __gshared const(char)[] processorStr = "";
 
-    uint maxThreads=1;
-    uint maxCores=1;
-    uint manufac=OTHER;
+    __gshared uint maxThreads=1;
+    __gshared uint maxCores=1;
+    __gshared uint manufac=OTHER;
 
     /* **
      * fetches the cpu vendor string
@@ -369,10 +369,10 @@ private:
 }
 else
 {
-    char[] toString() { return "unknown CPU\n"; }
+    const(char)[] toString() { return "unknown CPU\n"; }
 
-    char[] vendor()        {return "unknown vendor"; }
-    char[] processor()        {return "unknown processor"; }
+    const(char)[] vendor()        {return "unknown vendor"; }
+    const(char)[] processor()        {return "unknown processor"; }
 
     bool mmx()            {return false; }
     bool fxsr()            {return false; }

@@ -32,5 +32,5 @@ do
     shift
 done
 
-sed -e "s|\.\.|$xf|" modList.lst | xargs ldc -g -d-version=MultiThreaded -of=xfbuild $extra
+sed -e "s|\.\.|$xf|" modList.lst | xargs ldc2 -g -d-version=MultiThreaded -of=xfbuild -L-ltango-ldc $extra
 

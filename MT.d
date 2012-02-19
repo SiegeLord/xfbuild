@@ -87,8 +87,8 @@ version (MultiThreaded) {
 					abort();
 				}
 				catch (Exception e) {
-					char[] error;
-					e.writeOut((char[] msg) { error ~= msg; });
+					const(char)[] error;
+					error ~= e.msg;
 					Trace.formatln("{}", error);
 					abort();
 				}

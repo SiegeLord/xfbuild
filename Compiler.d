@@ -34,7 +34,7 @@ private {
 	//Regex	verboseRegex;
 }
 
-bool isVerboseMsg(char[] msg) {
+bool isVerboseMsg(const(char)[] msg) {
 	return
 		msg.startsWith(`parse`)
 	||	msg.startsWith(`semantic`)
@@ -44,7 +44,7 @@ bool isVerboseMsg(char[] msg) {
 	||	msg.startsWith(`code`);
 }
 
-static this() {
+shared static this() {
 	/+importSemanticStartRegex = Regex(`^Import::semantic\('([a-zA-Z0-9._]+)'\)$`);
 	importSemanticEndRegex = Regex(`^-Import::semantic\('([a-zA-Z0-9._]+)', '(.+)'\)$`);+/
 	//moduleSemantic1Regex = Regex(`^semantic\s+([a-zA-Z0-9._]+)$`);
@@ -54,16 +54,16 @@ static this() {
 
 
 class CompilerError : BuildException {
-	this (char[] msg) {
+	this (immutable(char)[] msg) {
 		super (msg);
 	}
-    this(char[]m,char[]fl,long ln,Exception next=null){
+    this(immutable(char)[]m,immutable(char)[]fl,long ln,Exception next=null){
         super(m,fl,ln,next);
     }
 }
 
 // TODO: Cache the escaped paths?
-private char[] unescapePath(char[] path) {
+private char[] unescapePath(const(char)[] path) {
 	char[] res = (new char[path.length])[0..0];
 	for (int i = 0; i < path.length; ++i) {
 		switch (path[i]) {
@@ -85,12 +85,12 @@ void compileAndTrackDeps(
 		ref Module[] compileMore,
 		size_t affinity
 ) {
-	Module getModule(char[] name, char[] path, bool* newlyEncountered = null) {
+	Module getModule(const(char)[] name, const(char)[] path, bool* newlyEncountered = null) {
 		Module worker() {
 			if (auto mp = name in modules) {
 				return *mp;
 			} else {
-				path = Path.standard(path);
+				path = Path.standard(path.dup);
 				
 				// If there's a corresponding .d file, compile that instead of trying to process a .di
 				if (path.length > 3 && path[$-3..$] == ".di") {
@@ -101,7 +101,7 @@ void compileAndTrackDeps(
 				
 				auto mod = new Module;
 				mod.name = name.dup;
-				mod.path = path.dup;
+				mod.path = path;
 				mod.timeModified = Path.modified(mod.path).ticks;
 				assert (modules !is null);
 				modules[mod.name] = mod;
@@ -117,52 +117,52 @@ void compileAndTrackDeps(
 	}
 	
 	
-	char[][] opts;
+	const(char[])[] opts;
 	
 	if (globalParams.manageHeaders)
 		opts ~= "-H";
 
-	char[] depsFileName;
+	const(char)[] depsFileName;
 
 	if (globalParams.useDeps) {
 		depsFileName = compileArray[0].name ~ ".moduleDeps";
 		opts ~= ["-deps=" ~ depsFileName];
 	}
 
-        if (globalParams.moduleByModule){
-            foreach(mod;compileArray){
-                try{
-                    compile(opts,[mod], (char[] line) {
-                        if (!isVerboseMsg(line) && TextUtil.trim(line).length) {
-                            Stderr(line).newline;
-                        }
-                    },
-                            globalParams.compilerName != "increBuild", // ==moveObjects?
-                            affinity
-                        );
-                } catch(ProcessExecutionException e){
-                    throw new CompilerError("Error compiling "~mod.name,__FILE__,__LINE__,e);
-                }
-            }
-        } else {
-            try{
-                compile(opts, compileArray, (char[] line) {
-                    if (!isVerboseMsg(line) && TextUtil.trim(line).length) {
-                        Stderr(line).newline;
-                    }
-                },
-                        globalParams.compilerName != "increBuild", // ==moveObjects?
-                        affinity
-                    );
-            } catch (ProcessExecutionException e) {
-                char[] mods;
-                foreach(i,m;compileArray){
-                    if (i!=0) mods~=",";
-                    mods~=m.name;
-                }
-		throw new CompilerError("Error compiling "~mods,__FILE__,
-                                        __LINE__,e);
-            }
+	if (globalParams.moduleByModule){
+		foreach(mod;compileArray){
+			try{
+				compile(opts,[mod], (const(char)[] line) {
+					if (!isVerboseMsg(line) && TextUtil.trim(line).length) {
+						Stderr(line).newline;
+					}
+				},
+						globalParams.compilerName != "increBuild", // ==moveObjects?
+						affinity
+					);
+			} catch(ProcessExecutionException e){
+				throw new CompilerError("Error compiling "~mod.name.idup,__FILE__,__LINE__,e);
+			}
+		}
+	} else {
+		try{
+			compile(opts, compileArray, (const(char)[] line) {
+				if (!isVerboseMsg(line) && TextUtil.trim(line).length) {
+					Stderr(line).newline;
+				}
+			},
+					globalParams.compilerName != "increBuild", // ==moveObjects?
+					affinity
+			       );
+		} catch (ProcessExecutionException e) {
+			const(char)[] mods;
+			foreach(i,m;compileArray){
+				if (i!=0) mods~=",";
+				mods~=m.name;
+			}
+			throw new CompilerError("Error compiling "~mods.idup,__FILE__,
+									__LINE__,e);
+		}
 	}
 
 	// This must be done after the compilation so if the compiler errors out,
@@ -234,13 +234,13 @@ void compileAndTrackDeps(
 
 
 void compile(
-		char[][] extraArgs,
+		const(char[])[] extraArgs,
 		Module[] compileArray,
-		void delegate(char[]) stdout,
+		scope void delegate(const(char)[]) stdout,
 		bool moveObjects,
 		size_t affinity,
 ) {
-	void execute(char[][] args, size_t affinity) {
+	void execute(const(char[])[] args, size_t affinity) {
 		executeCompilerViaResponseFile(args[0], args[1..$], affinity);
 		/+scope process = new Process(true, args);
 		.execute(process);
@@ -259,7 +259,7 @@ void compile(
 		{
 			void doGroup(Module[] group)
 			{
-				char[][] args;
+				const(char[])[] args;
 
 				args ~= globalParams.compilerName;
 				args ~= globalParams.compilerOptions;
@@ -282,7 +282,7 @@ void compile(
 
 			foreach(m; compileArray)
 			{
-				char[] lastName = Ascii.toLower(m.lastName.dup);
+				auto lastName = cast(immutable(char)[])Ascii.toLower(m.lastName.dup);
 				int group;
 
 				if(lastName in lastNames)
@@ -304,7 +304,7 @@ void compile(
 		}
 		else
 		{
-			char[][] args;
+			const(char[])[] args;
 			args ~= globalParams.compilerName;
 			args ~= globalParams.compilerOptions;
 			
@@ -464,6 +464,7 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 					compileLater ~= later;
 				}
 			} else {
+				Stdout("here", firstPass, modules).nl;
 				compileAndTrackDeps(compileNow, modules, compileLater, size_t.max);
 			}
 		//});

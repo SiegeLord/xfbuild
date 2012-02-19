@@ -6,6 +6,7 @@ private {
 	
 	import tango.io.device.File;
 	import tango.io.FilePath;
+	import Path = tango.io.Path;
 	import tango.text.Util;
 	import tango.text.convert.Format;
 	import tango.stdc.stringz;
@@ -28,7 +29,7 @@ private {
 
 
 class ProcessExecutionException : Exception {
-	this (char[] msg) {
+	this (immutable(char)[] msg) {
 		super (msg);
 	}
 }
@@ -45,7 +46,7 @@ void checkProcessFail(Process process)
 		if(name.length > 255)
 			name = name[0 .. 255] ~ " [...]";
 	
-		throw new ProcessExecutionException(`"` ~ name ~ `" returned ` ~ Integer.toString(result.status));
+		throw new ProcessExecutionException(`"` ~ name.idup ~ `" returned ` ~ Integer.toString(result.status).idup);
 	}
 }
 
@@ -64,7 +65,7 @@ void execute(Process process)
 	  license:     BSD style: $(LICENSE)
 	  author:      Juan Jose Comellas <juanjo@comellas.com.ar>
 */
-void executeAndCheckFail(char[][] cmd, size_t affinity)
+void executeAndCheckFail(const(char[])[] cmd, size_t affinity)
 {
 	void runNoAffinity() {
 		char[] sys = cmd.join(" ");
@@ -72,7 +73,7 @@ void executeAndCheckFail(char[][] cmd, size_t affinity)
 		int ret = system(csys);
 		
 		if (ret != 0) {
-			throw new ProcessExecutionException(`"` ~ sys ~ `" returned ` ~ Integer.toString(ret));
+			throw new ProcessExecutionException(`"` ~ sys.idup ~ `" returned ` ~ Integer.toString(ret).idup);
 		}
 	}
 	
@@ -111,7 +112,7 @@ void executeAndCheckFail(char[][] cmd, size_t affinity)
 							"SetProcessAffinityMask({}) failed: {}",
 							affinity,
 							SysError.lastMsg
-						)
+						).idup
 					);
 				}
 
@@ -135,19 +136,19 @@ void executeAndCheckFail(char[][] cmd, size_t affinity)
 
 					if (exitCode != 0) {
 						throw new ProcessExecutionException(
-							Format("'{}' returned {}.", allCmd, exitCode)
+							Format("'{}' returned {}.", allCmd, exitCode).idup
 						);
 					}
 				}
 				else if (rc == WAIT_FAILED)
 				{
 					throw new ProcessExecutionException(
-						Format("'{}' failed with an unknown exit status.", allCmd)
+						Format("'{}' failed with an unknown exit status.", allCmd).idup
 					);
 				}
 			} else {
 				throw new ProcessExecutionException(
-					Format("Could not execute '{}'.", allCmd)
+					Format("Could not execute '{}'.", allCmd).idup
 				);
 			}
 		}
@@ -159,9 +160,9 @@ void executeAndCheckFail(char[][] cmd, size_t affinity)
 }
 
 
-void executeCompilerViaResponseFile(char[] compiler, char[][] args, size_t affinity) {
-	char[] rspFile = Format("xfbuild.{:x}.rsp", cast(void*)Thread.getThis());
-	char[] rspData = args.join("\n");
+void executeCompilerViaResponseFile(const(char)[] compiler, const(char[])[] args, size_t affinity) {
+	const(char)[] rspFile = Format("xfbuild.{:x}.rsp", cast(void*)Thread.getThis());
+	const(char)[] rspData = args.join("\n");
 	/+if (globalParams.verbose) {
 		Stdout.formatln("running the compiler with:\n{}", rspData);
 	}+/
@@ -169,12 +170,12 @@ void executeCompilerViaResponseFile(char[] compiler, char[][] args, size_t affin
 	
 	scope (failure) {
 		if (globalParams.removeRspOnFail) {
-			FilePath(rspFile).remove();
+			Path.remove(rspFile);
 		}
 	}
 	
 	scope (success) {
-		FilePath(rspFile).remove();
+		Path.remove(rspFile);
 	}
 	
 	executeAndCheckFail([compiler, "@"~rspFile], affinity);
@@ -198,7 +199,7 @@ size_t getNthAffinityMaskBit(size_t n) {
 			&thisAffinity,
 			&sysAffinity
 		) || 0 == sysAffinity) {
-			throw new Exception("GetProcessAffinityMask failed");
+			throw new Exception("GetProcessAffinityMask failed".idup);
 		}
 
 		size_t i = n;

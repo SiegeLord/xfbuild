@@ -52,7 +52,7 @@ version (MultiThreaded) {
 			return result;
 		}
 		
-		int opApply(int delegate(ref int) dg)
+		int opApply(scope int delegate(ref int) dg)
 		{
 			if(to == from)
 				return 0;

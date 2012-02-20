@@ -464,7 +464,6 @@ void compile(ref Module[char[]] modules/+, ref Module[] moduleStack+/)
 					compileLater ~= later;
 				}
 			} else {
-				Stdout("here", firstPass, modules).nl;
 				compileAndTrackDeps(compileNow, modules, compileLater, size_t.max);
 			}
 		//});

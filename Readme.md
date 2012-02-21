@@ -2,7 +2,7 @@ xfbuild
 =======
 
 This is a minimal port of the xfbuild utility (originally made by h3r3tic) to D2.
-The original repository can be found here: https://bitbucket.org/h3r3tic/xfbuild/
+The original repository and more documentation can be found here: https://bitbucket.org/h3r3tic/xfbuild/wiki/Home
 
 Building
 -------
